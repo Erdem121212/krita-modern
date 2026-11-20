@@ -29,6 +29,7 @@
 #include "kis_tool_move.h"
 #include "kis_tool_pencil.h"
 #include "kis_tool_pan.h"
+#include "kis_tool_reference_window.h"
 
 K_PLUGIN_FACTORY_WITH_JSON(DefaultToolsFactory, "kritadefaulttools.json", registerPlugin<DefaultTools>();)
 
@@ -49,6 +50,7 @@ DefaultTools::DefaultTools(QObject *parent, const QVariantList &)
     KoToolRegistry::instance()->add(new KisToolMultiBrushFactory());
     KoToolRegistry::instance()->add(new KisToolPencilFactory());
     KoToolRegistry::instance()->add(new KisToolPanFactory());
+    KoToolRegistry::instance()->add(new KisToolReferenceWindowFactory());
 }
 
 DefaultTools::~DefaultTools()

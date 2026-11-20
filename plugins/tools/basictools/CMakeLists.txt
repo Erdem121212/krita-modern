@@ -18,6 +18,7 @@ set(kritadefaulttools_static_SRCS
     kis_tool_multihand_config.cpp
     kis_tool_pencil.cc
     kis_tool_pan.cpp
+    kis_tool_reference_window.cpp
 )
 
 ki18n_wrap_ui(kritadefaulttools_static_SRCS wdgcolorsampler.ui wdgmovetool.ui wdgmultihandtool.ui)

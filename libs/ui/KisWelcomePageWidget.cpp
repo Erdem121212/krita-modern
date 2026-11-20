@@ -33,6 +33,31 @@
 #include <QListWidgetItem>
 #include <QMenu>
 #include <QScrollBar>
+#include <QIdentityProxyModel>
+#include <QFileInfo>
+
+namespace {
+class NoExtensionProxyModel : public QIdentityProxyModel
+{
+public:
+    explicit NoExtensionProxyModel(QObject *parent = nullptr)
+        : QIdentityProxyModel(parent)
+    {}
+
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
+    {
+        QVariant value = QIdentityProxyModel::data(index, role);
+        if (role == Qt::DisplayRole && value.type() == QVariant::String) {
+            const QString name = value.toString();
+            const QString stripped = QFileInfo(name).completeBaseName();
+            if (!stripped.isEmpty()) {
+                return stripped;
+            }
+        }
+        return value;
+    }
+};
+}
 
 #include "kis_clipboard.h"
 #include "kis_icon_utils.h"
@@ -117,6 +142,25 @@ KisWelcomePageWidget::KisWelcomePageWidget(QWidget *parent)
     : QWidget(parent)
 {
     setupUi(this);
+
+    // Modernize welcome page: remove news, community links, and rename Start header
+    startTitleLabel->setText(i18n("A new drawing generates motivation"));
+    widgetRight->hide();
+    helpTitleLabel->hide();
+    manualLink->hide();
+    supportKritaLink->hide();
+    poweredByKDELink->hide();
+    sourceCodeLink->hide();
+    gettingStartedLink->hide();
+    userCommunityLink->hide();
+    kritaWebsiteLink->hide();
+    supportKritaIcon->hide();
+    userManualIcon->hide();
+    gettingStartedIcon->hide();
+    userCommunityIcon->hide();
+    kritaWebsiteIcon->hide();
+    sourceCodeIcon->hide();
+    kdeIcon->hide();
 
     // URLs that go to web browser...
     devBuildIcon->setIcon(KisIconUtils::loadIcon("warning"));
@@ -271,7 +315,9 @@ void KisWelcomePageWidget::setMainWindow(KisMainWindow* mainWin)
 
         KisRecentDocumentsModelWrapper *recentFilesModel = KisRecentDocumentsModelWrapper::instance();
         connect(recentFilesModel, SIGNAL(sigModelIsUpToDate()), this, SLOT(slotRecentFilesModelIsUpToDate()));
-        recentDocumentsListView->setModel(&recentFilesModel->model());
+        NoExtensionProxyModel *recentProxy = new NoExtensionProxyModel(this);
+        recentProxy->setSourceModel(&recentFilesModel->model());
+        recentDocumentsListView->setModel(recentProxy);
         slotRecentFilesModelIsUpToDate();
     }
 }
@@ -329,9 +375,17 @@ void KisWelcomePageWidget::slotUpdateThemeColors()
     // only show drop area when we have a document over the empty area
     showDropAreaIndicator(false);
 
-    // add icons for new and open settings to make them stand out a bit more
-    openFileLink->setIconSize(QSize(48, 48));
-    newFileLink->setIconSize(QSize(48, 48));
+    // Smaller, modern action buttons and text
+    openFileLink->setIconSize(QSize(24, 24));
+    newFileLink->setIconSize(QSize(24, 24));
+    QFont actionFont = newFileLink->font();
+    actionFont.setPointSize(qMax(9, actionFont.pointSize() - 2));
+    newFileLink->setFont(actionFont);
+    openFileLink->setFont(actionFont);
+    QFont shortcutFont = newFileLinkShortcut->font();
+    shortcutFont.setPointSize(qMax(8, shortcutFont.pointSize() - 2));
+    newFileLinkShortcut->setFont(shortcutFont);
+    openFileShortcut->setFont(shortcutFont);
 
     openFileLink->setIcon(KisIconUtils::loadIcon("document-open"));
     newFileLink->setIcon(KisIconUtils::loadIcon("document-new"));

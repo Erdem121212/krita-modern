@@ -114,6 +114,15 @@ KisOpenPane::KisOpenPane(QWidget *parent, const QStringList& mimeFilter, const Q
 {
     d->setupUi(this);
 
+    // Compact icon-only sidebar for template categories
+    d->m_sectionList->setFixedWidth(56);
+    d->m_sectionList->setIconSize(QSize(26, 26));
+    d->m_sectionList->setIndentation(0);
+    d->m_sectionList->setStyleSheet(QStringLiteral(
+        "QTreeWidget { padding: 4px; border-radius: 8px; }"
+        "QTreeWidget::item { padding: 6px; border-radius: 6px; margin: 2px 0; }"
+    ));
+
     m_mimeFilter = mimeFilter;
 
     QStyledItemDelegate* delegate = new QStyledItemDelegate(d->m_sectionList);
@@ -317,6 +326,8 @@ QTreeWidgetItem* KisOpenPane::addPane(const QString &title, const QString &untra
 
     QIcon finalIcon(iconPixmap);
     listItem->setIcon(0, finalIcon);
+    listItem->setText(0, QString());
+    listItem->setToolTip(0, title);
 
     return listItem;
 }
@@ -346,6 +357,8 @@ QTreeWidgetItem* KisOpenPane::addPane(const QString &title, const QString &untra
         image = image.copy((image.width() - iconSize) / 2, (image.height() - iconSize) / 2, iconSize, iconSize);
         listItem->setIcon(0, QIcon(QPixmap::fromImage(image)));
     }
+    listItem->setText(0, QString());
+    listItem->setToolTip(0, title);
 
     return listItem;
 }

@@ -17,6 +17,11 @@
 #include <QSpacerItem>
 
 #include <QMessageBox>
+#include <QPainter>
+#include <QMouseEvent>
+#include <QCheckBox>
+#include <QTabBar>
+#include <QVBoxLayout>
 #include <KoResourcePaths.h>
 
 #include <KFormat>
@@ -58,6 +63,185 @@ static const QString pixelsCentimeterStr()
 {
     static QString str = i18n("Pixels/Centimeter");
     return str;
+}
+
+namespace {
+class CanvasPreviewWidget : public QWidget
+{
+public:
+    explicit CanvasPreviewWidget(QDoubleSpinBox *widthBox, QDoubleSpinBox *heightBox, QWidget *parent = nullptr)
+        : QWidget(parent)
+        , m_widthBox(widthBox)
+        , m_heightBox(heightBox)
+    {
+        setMinimumHeight(175);
+        setMouseTracking(true);
+        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    }
+
+protected:
+    enum Handle { None = 0, Left = 1, Right = 2, Top = 4, Bottom = 8 };
+
+    QRectF canvasRect() const
+    {
+        const qreal maxBoxW = qMax<qreal>(40.0, width() - 48.0);
+        const qreal maxBoxH = qMax<qreal>(40.0, height() - 36.0);
+        const qreal w = qMax<qreal>(100.0, m_widthBox->value());
+        const qreal h = qMax<qreal>(100.0, m_heightBox->value());
+        const qreal maxDim = 8000.0;
+        const qreal scale = qMin(maxBoxW / maxDim, maxBoxH / maxDim);
+        const qreal rw = qBound<qreal>(28.0, w * scale, maxBoxW);
+        const qreal rh = qBound<qreal>(28.0, h * scale, maxBoxH);
+        return QRectF((width() - rw) * 0.5, (height() - rh) * 0.5, rw, rh);
+    }
+
+    int hitTest(const QPointF &pos) const
+    {
+        const QRectF r = canvasRect();
+        const qreal margin = 10.0;
+        if (!r.adjusted(-margin, -margin, margin, margin).contains(pos)) {
+            return None;
+        }
+        int mask = None;
+        if (qAbs(pos.x() - r.left()) <= margin) mask |= Left;
+        if (qAbs(pos.x() - r.right()) <= margin) mask |= Right;
+        if (qAbs(pos.y() - r.top()) <= margin) mask |= Top;
+        if (qAbs(pos.y() - r.bottom()) <= margin) mask |= Bottom;
+        return mask;
+    }
+
+    void updateCursor(int mask)
+    {
+        if ((mask == (Left | Top)) || (mask == (Right | Bottom))) {
+            setCursor(Qt::SizeFDiagCursor);
+        } else if ((mask == (Right | Top)) || (mask == (Left | Bottom))) {
+            setCursor(Qt::SizeBDiagCursor);
+        } else if (mask & (Left | Right)) {
+            setCursor(Qt::SizeHorCursor);
+        } else if (mask & (Top | Bottom)) {
+            setCursor(Qt::SizeVerCursor);
+        } else {
+            unsetCursor();
+        }
+    }
+
+    void mousePressEvent(QMouseEvent *event) override
+    {
+        if (event->button() == Qt::LeftButton) {
+            m_activeHandle = hitTest(event->pos());
+            if (m_activeHandle != None) {
+                m_dragStart = event->pos();
+                m_startW = m_widthBox->value();
+                m_startH = m_heightBox->value();
+                event->accept();
+                return;
+            }
+        }
+        QWidget::mousePressEvent(event);
+    }
+
+    void mouseMoveEvent(QMouseEvent *event) override
+    {
+        if (m_activeHandle != None) {
+            const qreal maxBoxW = qMax<qreal>(40.0, width() - 48.0);
+            const qreal maxBoxH = qMax<qreal>(40.0, height() - 36.0);
+            const qreal scale = qMin(maxBoxW / 8000.0, maxBoxH / 8000.0);
+            const QPointF delta = event->pos() - m_dragStart;
+            const qreal dxPx = (delta.x() * 2.0) / qMax(0.001, scale);
+            const qreal dyPx = (delta.y() * 2.0) / qMax(0.001, scale);
+
+            qreal newW = m_startW;
+            qreal newH = m_startH;
+            if (m_activeHandle & Right) newW += dxPx;
+            if (m_activeHandle & Left)  newW -= dxPx;
+            if (m_activeHandle & Bottom) newH += dyPx;
+            if (m_activeHandle & Top)    newH -= dyPx;
+
+            m_widthBox->setValue(qBound(16.0, qRound(newW / 10.0) * 10.0, 16000.0));
+            m_heightBox->setValue(qBound(16.0, qRound(newH / 10.0) * 10.0, 16000.0));
+            update();
+            event->accept();
+            return;
+        }
+        updateCursor(hitTest(event->pos()));
+        QWidget::mouseMoveEvent(event);
+    }
+
+    void mouseReleaseEvent(QMouseEvent *event) override
+    {
+        if (m_activeHandle != None) {
+            m_activeHandle = None;
+            updateCursor(hitTest(event->pos()));
+            event->accept();
+            return;
+        }
+        QWidget::mouseReleaseEvent(event);
+    }
+
+    void paintEvent(QPaintEvent *) override
+    {
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing, true);
+
+        const QRectF bg = rect().adjusted(2, 2, -2, -2);
+        QColor bgColor = palette().color(QPalette::Base);
+        p.setPen(QPen(palette().color(QPalette::Mid), 1));
+        p.setBrush(bgColor);
+        p.drawRoundedRect(bg, 8, 8);
+
+        // Subtle grid background
+        p.save();
+        p.setClipRect(bg.adjusted(1, 1, -1, -1));
+        QColor gridColor = palette().color(QPalette::Mid);
+        gridColor.setAlpha(60);
+        p.setPen(QPen(gridColor, 1));
+        const int step = 18;
+        for (int x = int(bg.left()) + step; x < int(bg.right()); x += step) {
+            p.drawLine(x, int(bg.top()), x, int(bg.bottom()));
+        }
+        for (int y = int(bg.top()) + step; y < int(bg.bottom()); y += step) {
+            p.drawLine(int(bg.left()), y, int(bg.right()), y);
+        }
+        p.restore();
+
+        // Canvas rectangle
+        const QRectF r = canvasRect();
+        QColor accent = palette().color(QPalette::Highlight);
+        QColor fill = palette().color(QPalette::Window).lighter(115);
+        p.setPen(QPen(accent, 2));
+        p.setBrush(fill);
+        p.drawRoundedRect(r, 4, 4);
+
+        // Size label inside preview
+        p.setPen(palette().color(QPalette::Text));
+        const QString sizeLabel = QString("%1 x %2 px")
+            .arg(qRound(m_widthBox->value()))
+            .arg(qRound(m_heightBox->value()));
+        p.drawText(r, Qt::AlignCenter, sizeLabel);
+
+        // Draggable edge/corner handles
+        p.setBrush(accent);
+        p.setPen(Qt::NoPen);
+        const qreal hs = 6.0;
+        const QPointF handles[8] = {
+            r.topLeft(), QPointF(r.center().x(), r.top()), r.topRight(),
+            QPointF(r.right(), r.center().y()), r.bottomRight(),
+            QPointF(r.center().x(), r.bottom()), r.bottomLeft(),
+            QPointF(r.left(), r.center().y())
+        };
+        for (const QPointF &pt : handles) {
+            p.drawEllipse(pt, hs * 0.55, hs * 0.55);
+        }
+    }
+
+private:
+    QDoubleSpinBox *m_widthBox;
+    QDoubleSpinBox *m_heightBox;
+    int m_activeHandle {None};
+    QPointF m_dragStart;
+    qreal m_startW {0};
+    qreal m_startH {0};
+};
 }
 
 KisCustomImageWidget::KisCustomImageWidget(QWidget* parent, const QString& imageName, const QLatin1String &dialogType)
@@ -174,6 +358,36 @@ KisCustomImageWidget::KisCustomImageWidget(QWidget* parent, const QString& image
     bnLandscape->setPalette(palette_highlight);
     bnPortrait->setPalette(palette_highlight);
     changeDocumentInfoLabel();
+
+    // Insert interactive grid-backed canvas preview at the top and hide advanced options by default
+    CanvasPreviewWidget *preview = new CanvasPreviewWidget(doubleWidth, doubleHeight, this);
+    connect(doubleWidth, SIGNAL(valueChanged(double)), preview, SLOT(update()));
+    connect(doubleHeight, SIGNAL(valueChanged(double)), preview, SLOT(update()));
+
+    QCheckBox *chkAdvanced = new QCheckBox(i18n("Show Advanced Settings"), this);
+    chkAdvanced->setChecked(false);
+    connect(chkAdvanced, SIGNAL(toggled(bool)), this, SLOT(toggleAdvancedOptions(bool)));
+
+    if (QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(layout())) {
+        mainLayout->insertWidget(0, preview);
+        int btnIdx = mainLayout->indexOf(newDialogConfirmationButtonBox);
+        if (btnIdx >= 0) {
+            mainLayout->insertWidget(btnIdx, chkAdvanced);
+        } else {
+            mainLayout->addWidget(chkAdvanced);
+        }
+    }
+    toggleAdvancedOptions(false);
+}
+
+void KisCustomImageWidget::toggleAdvancedOptions(bool show)
+{
+    tabWidget->tabBar()->setVisible(show);
+    if (!show) {
+        tabWidget->setCurrentIndex(0);
+    }
+    grpMode->setVisible(show);
+    bnSaveAsPredefined->setVisible(show);
 }
 
 void KisCustomImageWidget::showEvent(QShowEvent *)
