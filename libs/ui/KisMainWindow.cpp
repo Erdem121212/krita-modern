@@ -698,7 +698,8 @@ KisMainWindow::KisMainWindow(QUuid uuid)
 
     this->winId(); // Ensures the native window has been created.
 
-    QAction *shopAction = menuBar()->addAction(KisIconUtils::loadIcon(QStringLiteral("download")), i18n("Shop"));
+    QAction *shopAction = menuBar()->addAction(i18n("Shop"));
+    shopAction->setIcon(KisIconUtils::loadIcon(QStringLiteral("download")));
     connect(shopAction, &QAction::triggered, this, [this]() {
         KisBrushShopDialog dlg(this);
         dlg.exec();
