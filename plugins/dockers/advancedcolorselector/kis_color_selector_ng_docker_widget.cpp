@@ -117,13 +117,13 @@ public:
         if (!c.isValid() || m_internalUpdate) {
             return;
         }
-        float h, s, v;
+        qreal h = 0.0, s = 0.0, v = 0.0;
         c.getHsvF(&h, &s, &v);
-        if (h >= 0.0f) {
-            m_hue = qBound(0.0f, h, 1.0f);
+        if (h >= 0.0) {
+            m_hue = qBound<qreal>(0.0, h, 1.0);
         }
-        m_sat = qBound(0.0f, s, 1.0f);
-        m_val = qBound(0.0f, v, 1.0f);
+        m_sat = qBound<qreal>(0.0, s, 1.0);
+        m_val = qBound<qreal>(0.0, v, 1.0);
         updateDisplays();
     }
 
@@ -161,8 +161,8 @@ protected:
     {
         const qreal w = qMax(1, m_svBox->width() - 1);
         const qreal h = qMax(1, m_svBox->height() - 1);
-        m_sat = qBound(0.0f, float(pos.x() / w), 1.0f);
-        m_val = qBound(0.0f, float(1.0 - (pos.y() / h)), 1.0f);
+        m_sat = qBound<qreal>(0.0, pos.x() / w, 1.0);
+        m_val = qBound<qreal>(0.0, 1.0 - (pos.y() / h), 1.0);
         updateDisplays();
         emitColorChanged();
     }
@@ -171,7 +171,7 @@ protected:
     {
         const qreal pad = 8.0;
         const qreal w = qMax(1.0, m_hueBar->width() - 2.0 * pad);
-        m_hue = qBound(0.0f, float((pos.x() - pad) / w), 1.0f);
+        m_hue = qBound<qreal>(0.0, (pos.x() - pad) / w, 1.0);
         updateDisplays();
         emitColorChanged();
     }
@@ -266,9 +266,9 @@ private:
     QWidget *m_hueBar {nullptr};
     QLabel *m_swatch {nullptr};
     QLineEdit *m_hexEdit {nullptr};
-    float m_hue {0.0f};
-    float m_sat {1.0f};
-    float m_val {1.0f};
+    qreal m_hue {0.0};
+    qreal m_sat {1.0};
+    qreal m_val {1.0};
     bool m_draggingSV {false};
     bool m_draggingHue {false};
     bool m_internalUpdate {false};

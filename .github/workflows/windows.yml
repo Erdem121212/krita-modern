@@ -36,6 +36,17 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Cache ccache and KDE dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ github.workspace }}\.cc-cache
+            ${{ github.workspace }}\.kde-ci-cache
+          key: krita-win-${{ runner.os }}-${{ hashFiles('.kde-ci.yml') }}-${{ github.run_id }}
+          restore-keys: |
+            krita-win-${{ runner.os }}-${{ hashFiles('.kde-ci.yml') }}-
+            krita-win-${{ runner.os }}-
+
       - name: Install LLVM-MinGW (UCRT x86_64)
         shell: pwsh
         run: |
