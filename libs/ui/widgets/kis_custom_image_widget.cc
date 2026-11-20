@@ -566,6 +566,22 @@ KisDocument* KisCustomImageWidget::createNewImage()
     width = static_cast<qint32>(0.5  + KoUnit(KoUnit::Pixel, resolution).toUserValuePrecise(m_width));
     height = static_cast<qint32>(0.5 + KoUnit(KoUnit::Pixel, resolution).toUserValuePrecise(m_height));
 
+    // Automatically supersample small non-pixel-art canvases so raster brushes stay smooth and crisp
+    if (width > 128 && height > 128) {
+        const qint32 minSide = qMin(width, height);
+        int superScale = 1;
+        if (minSide < 800) {
+            superScale = 3;
+        } else if (minSide < 1600) {
+            superScale = 2;
+        }
+        if (superScale > 1) {
+            width *= superScale;
+            height *= superScale;
+            resolution *= superScale;
+        }
+    }
+
     QColor qc = cmbColor->color().toQColor();
     qc.setAlpha(backgroundOpacity());
     KoColor bgColor(qc, cs);
