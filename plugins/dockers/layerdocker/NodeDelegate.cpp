@@ -20,6 +20,7 @@
 #include <QModelIndex>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QPainterPath>
 #include <QPointer>
 #include <QStyle>
 #include <QStyleOptionViewItem>
