@@ -36,6 +36,23 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install LLVM-MinGW (UCRT x86_64)
+        shell: pwsh
+        run: |
+          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/mstorsjo/llvm-mingw/releases/latest"
+          $asset = $release.assets | Where-Object { $_.name -match "llvm-mingw-.*-ucrt-x86_64\.zip$" } | Select-Object -First 1
+          Write-Host "Downloading $($asset.name)..."
+          Invoke-WebRequest -Uri $asset.browser_download_url -OutFile "llvm-mingw.zip"
+          7z x llvm-mingw.zip -oC:\llvm-mingw-extract -y | Out-Null
+          $inner = Get-ChildItem C:\llvm-mingw-extract | Select-Object -First 1
+          Move-Item $inner.FullName C:\llvm-mingw
+          Remove-Item llvm-mingw.zip
+          "C:\llvm-mingw\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "${{ github.workspace }}\_install\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "MINGW_BIN_DIR=C:\llvm-mingw\bin" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "CC=clang" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "CXX=clang++" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Clone KDE deps & CI utilities
         shell: pwsh
         run: |
