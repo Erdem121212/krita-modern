@@ -57,6 +57,7 @@ private:
     QToolButton* m_fallbackSettingsButton;
 
     QPointer<KisCanvas2> m_canvas;
+    QWidget *m_modernSelector {nullptr};
 
 };
 

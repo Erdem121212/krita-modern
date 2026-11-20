@@ -193,25 +193,26 @@ LayerBox::LayerBox()
 
     slotUpdateIcons();
 
-    m_wdgLayerBox->bnAdd->setIconSize(QSize(22, 22));
-    m_wdgLayerBox->bnDelete->setIconSize(QSize(22, 22));
-    m_wdgLayerBox->bnRaise->setIconSize(QSize(22, 22));
-    m_wdgLayerBox->bnLower->setIconSize(QSize(22, 22));
-    m_wdgLayerBox->bnProperties->setIconSize(QSize(22, 22));
-    m_wdgLayerBox->bnDuplicate->setIconSize(QSize(22, 22));
+    m_wdgLayerBox->bnAdd->setIconSize(QSize(18, 18));
+    m_wdgLayerBox->bnDelete->setIconSize(QSize(18, 18));
+    m_wdgLayerBox->bnRaise->setIconSize(QSize(18, 18));
+    m_wdgLayerBox->bnLower->setIconSize(QSize(18, 18));
+    m_wdgLayerBox->bnProperties->setIconSize(QSize(18, 18));
+    m_wdgLayerBox->bnDuplicate->setIconSize(QSize(18, 18));
 
     m_wdgLayerBox->bnLower->setEnabled(false);
     m_wdgLayerBox->bnRaise->setEnabled(false);
 
     m_wdgLayerBox->doubleOpacity->setRange(0, 100, 0);
+    m_wdgLayerBox->doubleOpacity->setFixedHeight(22);
+    m_wdgLayerBox->doubleOpacity->setMaximumWidth(135);
+    m_wdgLayerBox->cmbComposite->setFixedHeight(22);
+    m_wdgLayerBox->cmbComposite->setMaximumWidth(135);
     if (cfg.sliderLabels()) {
         m_wdgLayerBox->opacityLabel->hide();
-        KisSpinBoxI18nHelper::setText(m_wdgLayerBox->doubleOpacity,
-                                      i18nc("{n} is the number value, % is the percent sign", "Opacity: {n}%"));
-    } else {
-        KisSpinBoxI18nHelper::setText(m_wdgLayerBox->doubleOpacity,
-                                      i18nc("{n} is the number value, % is the percent sign", "{n}%"));
     }
+    KisSpinBoxI18nHelper::setText(m_wdgLayerBox->doubleOpacity,
+                                  i18nc("{n} is the number value, % is the percent sign", "{n}%"));
 
     connect(m_wdgLayerBox->doubleOpacity, SIGNAL(valueChanged(qreal)), SLOT(slotOpacitySliderMoved(qreal)));
     connect(&m_nodeOpacityCompressor, SIGNAL(timeout()), SLOT(slotOpacityChanged()));

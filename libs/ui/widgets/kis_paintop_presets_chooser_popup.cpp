@@ -12,6 +12,9 @@
 #include <QWidgetAction>
 #include <QSlider>
 #include <QActionGroup>
+#include <QComboBox>
+#include <QLineEdit>
+#include <QToolButton>
 
 #include <KoResource.h>
 #include <KisResourceItemChooser.h>
@@ -87,6 +90,18 @@ KisPaintOpPresetsChooserPopup::KisPaintOpPresetsChooserPopup(QWidget * parent)
     m_d->uiWdgPaintOpPresets.wdgPresetChooser->itemChooser()->showViewModeBtn(true);
     m_d->viewModeButton = m_d->uiWdgPaintOpPresets.wdgPresetChooser->itemChooser()->viewModeButton();
     m_d->viewModeButton->setPopupWidget(menu);
+
+    // Compact category/tag filter bar
+    KisResourceItemChooser *itemChooser = m_d->uiWdgPaintOpPresets.wdgPresetChooser->itemChooser();
+    for (QComboBox *cb : itemChooser->findChildren<QComboBox*>()) {
+        cb->setMaximumHeight(24);
+    }
+    for (QLineEdit *le : itemChooser->findChildren<QLineEdit*>()) {
+        le->setMaximumHeight(24);
+    }
+    for (QToolButton *tb : itemChooser->findChildren<QToolButton*>()) {
+        tb->setMaximumHeight(24);
+    }
 
 
     connect(m_d->uiWdgPaintOpPresets.wdgPresetChooser, SIGNAL(resourceSelected(KoResourceSP )),

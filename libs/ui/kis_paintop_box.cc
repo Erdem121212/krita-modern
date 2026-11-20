@@ -243,7 +243,7 @@ KisPaintopBox::KisPaintopBox(KisViewManager *viewManager, QWidget *parent, const
         sliderWidth = 150 * logicalDpiX() / 96;
     }
     else {
-        sliderWidth = 120 * logicalDpiX() / 96;
+        sliderWidth = 78 * logicalDpiX() / 96;
     }
 
     for (int i = 0; i < 5; ++i) {
@@ -263,12 +263,15 @@ KisPaintopBox::KisPaintopBox(KisViewManager *viewManager, QWidget *parent, const
             slPatternSize = m_sliderChooser[i]->addWidget<KisMultipliersDoubleSliderSpinBox>("patternsize");
 
             KisSpinBoxI18nHelper::setText(slOpacity,
-                                          i18nc("{n} is the number value, % is the percent sign", "Opacity: {n}%"));
+                                          i18nc("{n} is the number value, % is the percent sign", "{n}%"));
             KisSpinBoxI18nHelper::setText(slFlow,
-                                          i18nc("{n} is the number value, % is the percent sign", "Flow: {n}%"));
-            slSize->setPrefix(QString("%1 ").arg(i18n("Size:")));
-            slRotation->setPrefix(QString("%1 ").arg(i18n("Rotation:")));
-            slPatternSize->setPrefix(QString("%1 ").arg(i18n("Pattern Scale:")));
+                                          i18nc("{n} is the number value, % is the percent sign", "{n}%"));
+            slSize->setSuffix(i18n(" px"));
+            slOpacity->setToolTip(i18n("Opacity"));
+            slFlow->setToolTip(i18n("Flow"));
+            slSize->setToolTip(i18n("Size"));
+            slRotation->setToolTip(i18n("Rotation"));
+            slPatternSize->setToolTip(i18n("Pattern Scale"));
         }
         else {
             slOpacity     = m_sliderChooser[i]->addWidget<KisDoubleSliderSpinBox>("opacity", i18n("Opacity:"));
