@@ -227,12 +227,12 @@ void KisConfig::setCumulativeUndoData(KisCumulativeUndoData value)
 
 qint32 KisConfig::defImageWidth(bool defaultValue) const
 {
-    return (defaultValue ? 2480 : m_cfg.readEntry("imageWidthDef", 2480));
+    return (defaultValue ? 3840 : m_cfg.readEntry("imageWidthDef", 3840));
 }
 
 qint32 KisConfig::defImageHeight(bool defaultValue) const
 {
-    return (defaultValue ? 3508 : m_cfg.readEntry("imageHeightDef", 3508));
+    return (defaultValue ? 2560 : m_cfg.readEntry("imageHeightDef", 2560));
 }
 
 qreal KisConfig::defImageResolution(bool defaultValue) const
@@ -2230,7 +2230,7 @@ void KisConfig::setDefaultBackgroundStyle(const QLatin1String &dialogType, KisCo
 
 int KisConfig::lineSmoothingType(bool defaultValue) const
 {
-    return (defaultValue ? 1 : m_cfg.readEntry("LineSmoothingType", 1));
+    return (defaultValue ? 2 : m_cfg.readEntry("LineSmoothingType", 2));
 }
 
 void KisConfig::setLineSmoothingType(int value)
@@ -2280,7 +2280,7 @@ void KisConfig::setLineSmoothingTailAggressiveness(qreal value)
 
 bool KisConfig::lineSmoothingSmoothPressure(bool defaultValue) const
 {
-    return (defaultValue ? false : m_cfg.readEntry("LineSmoothingSmoothPressure", false));
+    return (defaultValue ? true : m_cfg.readEntry("LineSmoothingSmoothPressure", true));
 }
 
 void KisConfig::setLineSmoothingSmoothPressure(bool value)

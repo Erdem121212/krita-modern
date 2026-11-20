@@ -26,6 +26,7 @@
 class QCheckBox;
 class QComboBox;
 class QLabel;
+class QButtonGroup;
 
 class KisKActionCollection;
 
@@ -108,11 +109,21 @@ Q_SIGNALS:
     void finishStabilizedCurveChanged();
     void stabilizeSensorsChanged();
 
+private Q_SLOTS:
+    void slotSetSmoothingStrength(int strength);
+    void slotSetSmoothingPreset(int strength);
+    void slotToggleAdvancedSmoothing(bool show);
+
 private:
     void addSmoothingAction(int enumId, const QString &id);
     void updateSmoothnessDistanceLabel();
+    int currentSmoothingStrength() const;
+    void syncEasySmoothingControls();
 private:
     QComboBox *m_cmbSmoothingType {0};
+    KisSliderSpinBox *m_sliderSmoothingStrength {0};
+    QButtonGroup *m_smoothingPresetGroup {0};
+    QCheckBox *m_chkAdvancedSmoothing {0};
 
     QCheckBox *m_chkAssistant {0};
     KisSliderSpinBox *m_sliderMagnetism {0};
