@@ -39,7 +39,7 @@ jobs:
       - name: Install LLVM-MinGW (UCRT x86_64)
         shell: pwsh
         run: |
-          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/mstorsjo/llvm-mingw/releases/latest"
+          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/mstorsjo/llvm-mingw/releases/tags/20251216"
           $asset = $release.assets | Where-Object { $_.name -match "llvm-mingw-.*-ucrt-x86_64\.zip$" } | Select-Object -First 1
           Write-Host "Downloading $($asset.name)..."
           Invoke-WebRequest -Uri $asset.browser_download_url -OutFile "llvm-mingw.zip"

@@ -11,6 +11,7 @@
 #ifndef LEAPFROG_H
 #define LEAPFROG_H
 
+#include <cstdlib>
 #include "map_traits.h"
 #include "simple_job_coordinator.h"
 #include "kis_assert.h"
