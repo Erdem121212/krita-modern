@@ -1,0 +1,71 @@
+name: Build Krita (Windows 10)
+
+on:
+  push:
+    branches:
+      - modern-ui
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 180
+
+    env:
+      KDECI_BUILD_TYPE: Release
+      KDECI_GITLAB_SERVER: https://invent.kde.org/
+      KDECI_PACKAGE_PROJECT: teams/ci-artifacts/krita-windows
+      KDECI_REPO_METADATA_PATH: ${{ github.workspace }}\krita-deps-management\repo-metadata
+      KDECI_CC_CACHE: ${{ github.workspace }}\.cc-cache
+      KDECI_CACHE_PATH: ${{ github.workspace }}\.kde-ci-cache
+      KDECI_COMPRESS_PACKAGES_ON_DOWNLOAD: False
+      KDECI_EXTRA_CMAKE_ARGS: -DHIDE_SAFE_ASSERTS=OFF -DBUILD_TESTING=OFF
+      KRITACI_SKIP_DEBUG_PACKAGE: True
+      KRITACI_BUILD_INSTALLERS: False
+      KRITACI_SKIP_UPLOAD_NIGHTLY_PACKAGE: True
+      KDECI_SIGN_BINARIES: False
+      PYTHONUTF8: 1
+
+    steps:
+      - name: Checkout Krita fork
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Clone KDE deps & CI utilities
+        shell: pwsh
+        run: |
+          git clone https://invent.kde.org/packaging/krita-deps-management.git -b master --depth=1
+          git clone https://invent.kde.org/packaging/krita-ci-utilities.git krita-deps-management/ci-utilities --depth=1
+
+      - name: Install Python dependencies
+        shell: pwsh
+        run: |
+          python -m venv venv --upgrade-deps
+          .\venv\Scripts\Activate.ps1
+          pip install -r krita-deps-management/requirements.txt
+          pip install -r krita-deps-management/ci-utilities/requirements-windows.txt
+
+      - name: Configure & Build Krita
+        shell: pwsh
+        run: |
+          .\venv\Scripts\Activate.ps1
+          git config --global --add safe.directory $env:GITHUB_WORKSPACE
+          $shortSha = git rev-parse --short HEAD
+          $env:CI_COMMIT_SHORT_SHA = $shortSha
+          python -u krita-deps-management/tools/replace-branch-in-seed-file.py krita-deps-management/latest/krita-deps.yml -p -o branch-corrected-deps.yml -d master
+          python -u krita-deps-management/tools/generate-deps-file.py -s branch-corrected-deps.yml -o .kde-ci.yml
+          python -u krita-deps-management/ci-utilities/run-ci-build.py --project krita --branch $env:GITHUB_REF_NAME --platform Windows/Qt5/Shared --skip-publishing
+          python -u build-tools/ci-scripts/build-windows-package.py
+
+      - name: Upload Windows Portable Package
+        uses: actions/upload-artifact@v4
+        with:
+          name: krita-modern-windows-x64
+          path: |
+            *.zip
+            *.exe

@@ -12,6 +12,10 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QButtonGroup>
+#include <QPushButton>
+#include <QHBoxLayout>
+#include <QSignalBlocker>
 
 #include <klocalizedstring.h>
 #include <QAction>
@@ -203,6 +207,22 @@ void KisToolBrush::slotSetSmoothingType(int index)
         showControl(m_chkStabilizeSensors, false);
     }
     updateSmoothnessDistanceLabel();
+
+    if (m_chkAdvancedSmoothing && !m_chkAdvancedSmoothing->isChecked()) {
+        m_lblSmoothnessDistanceMin->setVisible(false);
+        m_sliderSmoothnessDistanceMin->setVisible(false);
+        m_lblSmoothnessDistanceMax->setVisible(false);
+        m_sliderSmoothnessDistanceMax->setVisible(false);
+        m_distanceAspectButton->setVisible(false);
+        showControl(m_sliderTailAggressiveness, false);
+        showControl(m_chkSmoothPressure, false);
+        showControl(m_chkUseScalableDistance, false);
+        showControl(m_sliderDelayDistance, false);
+        showControl(m_chkFinishStabilizedCurve, false);
+        showControl(m_chkStabilizeSensors, false);
+    }
+
+    syncEasySmoothingControls();
 
     Q_EMIT smoothingTypeChanged();
 }
@@ -396,6 +416,110 @@ void KisToolBrush::updateSettingsViews()
     Q_EMIT stabilizeSensorsChanged();
 
     KisTool::updateSettingsViews();
+    syncEasySmoothingControls();
+}
+
+int KisToolBrush::currentSmoothingStrength() const
+{
+    switch (smoothingOptions()->smoothingType()) {
+    case KisSmoothingOptions::NO_SMOOTHING:
+    case KisSmoothingOptions::PIXEL_PERFECT:
+        return 0;
+    case KisSmoothingOptions::SIMPLE_SMOOTHING:
+        return 15;
+    case KisSmoothingOptions::WEIGHTED_SMOOTHING: {
+        const qreal avgDist = 0.5 * (smoothingOptions()->smoothnessDistanceMin() + smoothingOptions()->smoothnessDistanceMax());
+        const qreal clamped = qBound(6.0, avgDist, 120.0);
+        return qBound(1, qRound(1.0 + ((clamped - 6.0) / 114.0) * 64.0), 65);
+    }
+    case KisSmoothingOptions::STABILIZER: {
+        const qreal avgSamples = 0.5 * (smoothingOptions()->smoothnessDistanceMin() + smoothingOptions()->smoothnessDistanceMax());
+        const qreal clamped = qBound(12.0, avgSamples, 100.0);
+        return qBound(66, qRound(66.0 + ((clamped - 12.0) / 88.0) * 34.0), 100);
+    }
+    }
+    return 40;
+}
+
+void KisToolBrush::syncEasySmoothingControls()
+{
+    if (!m_sliderSmoothingStrength) {
+        return;
+    }
+
+    const int strength = currentSmoothingStrength();
+    {
+        QSignalBlocker blocker(m_sliderSmoothingStrength);
+        m_sliderSmoothingStrength->setValue(strength);
+    }
+
+    if (m_smoothingPresetGroup) {
+        QSignalBlocker blocker(m_smoothingPresetGroup);
+        for (QAbstractButton *btn : m_smoothingPresetGroup->buttons()) {
+            const int presetVal = m_smoothingPresetGroup->id(btn);
+            btn->setChecked(qAbs(strength - presetVal) <= 5);
+        }
+    }
+}
+
+void KisToolBrush::slotSetSmoothingStrength(int strength)
+{
+    strength = qBound(0, strength, 100);
+
+    if (strength == 0) {
+        smoothingOptions()->setSmoothingType(KisSmoothingOptions::NO_SMOOTHING);
+    } else if (strength <= 65) {
+        const qreal t = (strength - 1) / 64.0;
+        const qreal dist = 6.0 + t * 114.0;
+        const qreal tail = 0.25 - t * 0.15;
+        smoothingOptions()->setSmoothingType(KisSmoothingOptions::WEIGHTED_SMOOTHING);
+        smoothingOptions()->setSmoothnessDistanceMin(dist);
+        smoothingOptions()->setSmoothnessDistanceMax(dist);
+        smoothingOptions()->setSmoothPressure(true);
+        smoothingOptions()->setTailAggressiveness(tail);
+    } else {
+        const qreal t = (strength - 66) / 34.0;
+        const qreal samples = qRound(12.0 + t * 88.0);
+        smoothingOptions()->setSmoothingType(KisSmoothingOptions::STABILIZER);
+        smoothingOptions()->setSmoothnessDistanceMin(samples);
+        smoothingOptions()->setSmoothnessDistanceMax(samples);
+        smoothingOptions()->setFinishStabilizedCurve(true);
+        smoothingOptions()->setStabilizeSensors(true);
+        const bool useDelay = (strength >= 80);
+        smoothingOptions()->setUseDelayDistance(useDelay);
+        if (useDelay) {
+            smoothingOptions()->setDelayDistance(qRound(((strength - 80) / 20.0) * 35.0));
+        }
+    }
+
+    updateSettingsViews();
+}
+
+void KisToolBrush::slotSetSmoothingPreset(int strength)
+{
+    slotSetSmoothingStrength(strength);
+}
+
+void KisToolBrush::slotToggleAdvancedSmoothing(bool show)
+{
+    if (m_cmbSmoothingType) {
+        showControl(m_cmbSmoothingType, show);
+    }
+    if (show && m_cmbSmoothingType) {
+        slotSetSmoothingType(m_cmbSmoothingType->currentIndex());
+    } else {
+        if (m_lblSmoothnessDistanceMin) m_lblSmoothnessDistanceMin->setVisible(false);
+        if (m_sliderSmoothnessDistanceMin) m_sliderSmoothnessDistanceMin->setVisible(false);
+        if (m_lblSmoothnessDistanceMax) m_lblSmoothnessDistanceMax->setVisible(false);
+        if (m_sliderSmoothnessDistanceMax) m_sliderSmoothnessDistanceMax->setVisible(false);
+        if (m_distanceAspectButton) m_distanceAspectButton->setVisible(false);
+        showControl(m_sliderTailAggressiveness, false);
+        showControl(m_chkSmoothPressure, false);
+        showControl(m_chkUseScalableDistance, false);
+        showControl(m_sliderDelayDistance, false);
+        showControl(m_chkFinishStabilizedCurve, false);
+        showControl(m_chkStabilizeSensors, false);
+    }
 }
 
 QWidget * KisToolBrush::createOptionWidget()
@@ -408,6 +532,46 @@ QWidget * KisToolBrush::createOptionWidget()
     specialSpacer->setObjectName("SpecialSpacer");
     specialSpacer->setFixedSize(0, 0);
     optionsWidget->layout()->addWidget(specialSpacer);
+
+    // Quick & flexible smoothing controls
+    m_sliderSmoothingStrength = new KisSliderSpinBox(optionsWidget);
+    m_sliderSmoothingStrength->setRange(0, 100);
+    m_sliderSmoothingStrength->setSuffix(QStringLiteral("%"));
+    m_sliderSmoothingStrength->setToolTip(i18n("0%: Raw input | 1-65%: Smooth Weighted | 66-100%: Heavy Stabilizer"));
+    connect(m_sliderSmoothingStrength, SIGNAL(valueChanged(int)), this, SLOT(slotSetSmoothingStrength(int)));
+    addOptionWidgetOption(m_sliderSmoothingStrength, new QLabel(i18n("Smoothing:"), optionsWidget));
+
+    QWidget *presetWidget = new QWidget(optionsWidget);
+    QHBoxLayout *presetLayout = new QHBoxLayout(presetWidget);
+    presetLayout->setContentsMargins(0, 0, 0, 0);
+    presetLayout->setSpacing(4);
+    m_smoothingPresetGroup = new QButtonGroup(presetWidget);
+    m_smoothingPresetGroup->setExclusive(true);
+
+    const struct {
+        QString label;
+        int strength;
+    } presets[] = {
+        { i18n("Off"), 0 },
+        { i18n("Light"), 25 },
+        { i18n("Smooth"), 50 },
+        { i18n("Heavy"), 85 }
+    };
+
+    for (const auto &preset : presets) {
+        QPushButton *btn = new QPushButton(preset.label, presetWidget);
+        btn->setCheckable(true);
+        btn->setMinimumHeight(24);
+        m_smoothingPresetGroup->addButton(btn, preset.strength);
+        presetLayout->addWidget(btn);
+    }
+    connect(m_smoothingPresetGroup, SIGNAL(idClicked(int)), this, SLOT(slotSetSmoothingPreset(int)));
+    addOptionWidgetOption(presetWidget, new QLabel(i18n("Quick Preset:"), optionsWidget));
+
+    m_chkAdvancedSmoothing = new QCheckBox(i18n("Show Advanced Smoothing"), optionsWidget);
+    m_chkAdvancedSmoothing->setChecked(false);
+    connect(m_chkAdvancedSmoothing, SIGNAL(toggled(bool)), this, SLOT(slotToggleAdvancedSmoothing(bool)));
+    addOptionWidgetOption(m_chkAdvancedSmoothing);
 
     // Line smoothing configuration
     m_cmbSmoothingType = new QComboBox(optionsWidget);
@@ -537,6 +701,9 @@ QWidget * KisToolBrush::createOptionWidget()
                                                "level is chosen"));
     connect(m_chkUseScalableDistance, SIGNAL(toggled(bool)), this, SLOT(setUseScalableDistance(bool)));
     addOptionWidgetOption(m_chkUseScalableDistance, new QLabel(QString("%1:").arg(i18n("Scalable Distance")), optionsWidget));
+
+    syncEasySmoothingControls();
+    slotToggleAdvancedSmoothing(false);
 
     // add a line spacer so we know that the next set of options are for different settings
     QFrame* line = new QFrame(optionsWidget);
