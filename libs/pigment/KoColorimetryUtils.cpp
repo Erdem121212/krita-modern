@@ -7,6 +7,7 @@
 
 #include "KoColorimetryUtils.h"
 
+#include <cmath>
 #include <QDebug>
 
 namespace KoColorimetryUtils

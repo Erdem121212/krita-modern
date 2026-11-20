@@ -77,7 +77,9 @@ jobs:
           python -u krita-deps-management/tools/replace-branch-in-seed-file.py krita-deps-management/latest/krita-deps.yml -p -o branch-corrected-deps.yml -d master
           python -u krita-deps-management/tools/generate-deps-file.py -s branch-corrected-deps.yml -o .kde-ci.yml
           python -u krita-deps-management/ci-utilities/run-ci-build.py --project krita --branch $env:GITHUB_REF_NAME --platform Windows/Qt5/Shared --skip-publishing
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -u build-tools/ci-scripts/build-windows-package.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Upload Windows Portable Package
         uses: actions/upload-artifact@v4
