@@ -205,7 +205,7 @@ void KisFirstRunWizard::applyConfiguration()
         cfg.setLineSmoothingDistanceMax(70.0);
         cfg.setLineSmoothingSmoothPressure(false);
     } else if (dev == DeviceTouch) {
-        cfg.setDisableTouchOnCanvas(false);
+        cfg.setTouchPainting(KisConfig::TOUCH_PAINTING_ENABLED);
         cfg.setLineSmoothingType(2);
         cfg.setLineSmoothingDistanceMin(55.0);
         cfg.setLineSmoothingDistanceMax(55.0);
