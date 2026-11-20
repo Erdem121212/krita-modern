@@ -147,6 +147,7 @@
 #include "KisWindowLayoutManager.h"
 #include <KisUndoActionsUpdateManager.h>
 #include "KisWelcomePageWidget.h"
+#include "KisBrushShopDialog.h"
 #include "KisRecentDocumentsModelWrapper.h"
 #include <KritaVersionWrapper.h>
 #include "KisCanvasWindow.h"
@@ -693,6 +694,12 @@ KisMainWindow::KisMainWindow(QUuid uuid)
     }
 
     this->winId(); // Ensures the native window has been created.
+
+    QAction *shopAction = menuBar()->addAction(i18n("Shop"));
+    connect(shopAction, &QAction::triggered, this, [this]() {
+        KisBrushShopDialog dlg(this);
+        dlg.exec();
+    });
 
 #ifdef Q_OS_ANDROID
     // HACK: This prevents the mainWindow from going beyond the screen with no

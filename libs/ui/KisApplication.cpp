@@ -60,6 +60,7 @@
 #include "KisPart.h"
 #include <kis_icon.h>
 #include "kis_splash_screen.h"
+#include "KisFirstRunWizard.h"
 #include "kis_config.h"
 #include "kis_config_notifier.h"
 #include "flake/kis_shape_selection.h"
@@ -549,7 +550,7 @@ bool KisApplication::start(const KisApplicationArguments &args)
     KConfigGroup group(KSharedConfig::openConfig(), "theme");
 #ifndef Q_OS_HAIKU
     Digikam::ThemeManager themeManager;
-    themeManager.setCurrentTheme(group.readEntry("Theme", "Krita dark"));
+    themeManager.setCurrentTheme(group.readEntry("Theme", "Krita darker"));
 #endif
 
     // Apply subtle modern rounded styling that adapts to the active Krita palette
@@ -684,6 +685,11 @@ bool KisApplication::start(const KisApplicationArguments &args)
 
     KisPart *kisPart = KisPart::instance();
     if (needsMainWindow) {
+        if (KisFirstRunWizard::shouldRun()) {
+            hideSplashScreen();
+            KisFirstRunWizard wizard;
+            wizard.exec();
+        }
         // show a mainWindow asap, if we want that
         setSplashScreenLoadingText(i18n("Loading Main Window..."));
         processEvents();
