@@ -482,6 +482,18 @@ void KisCustomImageWidget::heightChanged(double value)
 
 void KisCustomImageWidget::createImage()
 {
+    if (m_width * m_height > 36000000.0 || m_width > 8000.0 || m_height > 8000.0) {
+        const QMessageBox::StandardButton answer = QMessageBox::warning(
+            this,
+            i18n("Huge Canvas Warning"),
+            QStringLiteral("Hey buddy the bigger resolution , the lower performance!! Be careful.. You may crash your PC with that big resolution! Well i cant give guarantee if yours an good PC:.. Idk.. yeah."),
+            QMessageBox::Yes | QMessageBox::Cancel,
+            QMessageBox::Cancel);
+        if (answer != QMessageBox::Yes) {
+            return;
+        }
+    }
+
     newDialogConfirmationButtonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
     KisDocument *doc = createNewImage();
     if (doc) {
