@@ -151,10 +151,7 @@ KisSplashScreen::Source KisSplashScreen::getImageSource()
     }
 #endif
 #endif
-    if (!artistCredit.isEmpty()) {
-        artistCredit = i18nc("splash image credit", "Artwork by: %1", artistCredit);
-    }
-    return Source{resourcePath, artistCredit};
+    return Source{resourcePath, QString()};
 }
 
 void KisSplashScreen::repaint()
