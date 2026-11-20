@@ -482,6 +482,19 @@ void KisCustomImageWidget::heightChanged(double value)
 
 void KisCustomImageWidget::createImage()
 {
+    if (m_width < 800.0 || m_height < 800.0) {
+        const QMessageBox::StandardButton answer = QMessageBox::warning(
+            this,
+            i18n("Low Resolution Warning"),
+            i18n("This canvas is pretty small (%1 x %2 px), so your brush strokes may look pixelated! Are you sure you want to continue? (Great for pixel art, though!)",
+                 qRound(m_width), qRound(m_height)),
+            QMessageBox::Yes | QMessageBox::Cancel,
+            QMessageBox::Cancel);
+        if (answer != QMessageBox::Yes) {
+            return;
+        }
+    }
+
     if (m_width * m_height > 36000000.0 || m_width > 8000.0 || m_height > 8000.0) {
         const QMessageBox::StandardButton answer = QMessageBox::warning(
             this,
