@@ -710,6 +710,8 @@ if (KRITA_USE_SURFACE_COLOR_MANAGEMENT_API)
 endif()
 
 
+qt_add_resources(kritaui_LIB_SRCS modern_ui.qrc)
+
 kis_add_library(kritaui SHARED ${kritaui_HEADERS_MOC} ${kritaui_LIB_SRCS})
 
 target_sources(kritaui

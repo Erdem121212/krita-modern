@@ -27,6 +27,10 @@
 #include <klocalizedstring.h>
 #include <KisStorageModel.h>
 #include <KisResourceServerProvider.h>
+#include <KisResourceModel.h>
+#include <KisResourceModelProvider.h>
+#include <KisTagModel.h>
+#include <KisTagResourceModel.h>
 #include <brushengine/kis_paintop_preset.h>
 
 KisBrushShopDialog::KisBrushShopDialog(QWidget *parent)
@@ -228,10 +232,41 @@ void KisBrushShopDialog::downloadAndInstallUrl(const QUrl &url, const QString &s
 
 bool KisBrushShopDialog::importDownloadedFile(const QString &filePath)
 {
+    KisTagModel tagModel(ResourceType::PaintOpPresets);
+    KisTagSP importedTag = tagModel.tagForUrl(QStringLiteral("Imported"));
+    if (!importedTag) {
+        importedTag = tagModel.addTag(QStringLiteral("Imported"), false, {});
+    }
+
     if (filePath.endsWith(QStringLiteral(".bundle"), Qt::CaseInsensitive)) {
-        return KisStorageModel::instance()->importStorage(filePath, KisStorageModel::Overwrite);
+        KisResourceModel resModel(ResourceType::PaintOpPresets);
+        QSet<int> beforeIds;
+        for (int i = 0; i < resModel.rowCount(); ++i) {
+            beforeIds.insert(resModel.data(resModel.index(i, 0), Qt::UserRole + KisAbstractResourceModel::Id).toInt());
+        }
+        const bool ok = KisStorageModel::instance()->importStorage(filePath, KisStorageModel::Overwrite);
+        if (ok && importedTag) {
+            QVector<int> newIds;
+            for (int i = 0; i < resModel.rowCount(); ++i) {
+                const int id = resModel.data(resModel.index(i, 0), Qt::UserRole + KisAbstractResourceModel::Id).toInt();
+                if (!beforeIds.contains(id)) {
+                    newIds.append(id);
+                }
+            }
+            if (!newIds.isEmpty()) {
+                if (auto *tagResModel = KisResourceModelProvider::tagResourceModel(ResourceType::PaintOpPresets)) {
+                    tagResModel->tagResources(importedTag, newIds);
+                }
+            }
+        }
+        return ok;
     } else if (filePath.endsWith(QStringLiteral(".kpp"), Qt::CaseInsensitive)) {
         KoResourceSP res = KisResourceServerProvider::instance()->paintOpPresetServer()->importResourceFile(filePath, true);
+        if (!res.isNull() && importedTag) {
+            if (auto *tagResModel = KisResourceModelProvider::tagResourceModel(ResourceType::PaintOpPresets)) {
+                tagResModel->tagResources(importedTag, {res->resourceId()});
+            }
+        }
         return !res.isNull();
     }
     return false;

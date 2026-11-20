@@ -854,19 +854,35 @@ void NodeDelegate::drawVisibilityIcon(QPainter *p, const QStyleOptionViewItem &o
         p->setOpacity(0.35);
     }
 
-    QPixmap pixmapIcon(icon.pixmap(scm.visibilitySize(), QIcon::Active));
-    p->drawPixmap(fitRect.x(), fitRect.center().y() - scm.visibilitySize() / 2, pixmapIcon);
+    p->save();
+    p->setRenderHint(QPainter::Antialiasing, true);
+    const QRectF eyeBox(fitRect.x() + 1, fitRect.center().y() - scm.visibilitySize() * 0.45,
+                        scm.visibilitySize() - 2, scm.visibilitySize() * 0.9);
+    const QColor eyeColor = prop->isInStasis
+        ? d->view->palette().color(QPalette::Highlight)
+        : option.palette.color(QPalette::Text);
 
-    if (prop->isInStasis) {
-        QPainter::CompositionMode prevComposition = p->compositionMode();
-        p->setCompositionMode(QPainter::CompositionMode_HardLight);
-        pixmapIcon = icon.pixmap(scm.visibilitySize(), QIcon::Active);
-        QBitmap mask = pixmapIcon.mask();
-        pixmapIcon.fill(d->view->palette().color(QPalette::Highlight));
-        pixmapIcon.setMask(mask);
-        p->drawPixmap(fitRect.x(), fitRect.center().y() - scm.visibilitySize() / 2, pixmapIcon);
-        p->setCompositionMode(prevComposition);
+    QPainterPath eyeOutline;
+    const QPointF leftPt(eyeBox.left(), eyeBox.center().y());
+    const QPointF rightPt(eyeBox.right(), eyeBox.center().y());
+    eyeOutline.moveTo(leftPt);
+    eyeOutline.quadTo(QPointF(eyeBox.center().x(), eyeBox.top() - eyeBox.height() * 0.25), rightPt);
+    eyeOutline.quadTo(QPointF(eyeBox.center().x(), eyeBox.bottom() + eyeBox.height() * 0.25), leftPt);
+
+    p->setPen(QPen(eyeColor, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    p->setBrush(Qt::NoBrush);
+    p->drawPath(eyeOutline);
+
+    if (prop->state.toBool()) {
+        p->setBrush(eyeColor);
+        p->setPen(Qt::NoPen);
+        p->drawEllipse(eyeBox.center(), eyeBox.height() * 0.22, eyeBox.height() * 0.22);
+    } else {
+        p->setPen(QPen(eyeColor, 1.6, Qt::SolidLine, Qt::RoundCap));
+        p->drawLine(QPointF(eyeBox.left() + 1.5, eyeBox.bottom() - 1.5),
+                    QPointF(eyeBox.right() - 1.5, eyeBox.top() + 1.5));
     }
+    p->restore();
 
     p->setOpacity(oldOpacity);
 

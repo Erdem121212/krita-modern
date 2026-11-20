@@ -34,6 +34,13 @@
 #include <QStyleFactory>
 
 #include <kis_debug.h>
+#include <QSlider>
+#include <QWidgetAction>
+#include <QComboBox>
+#include <QLabel>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+
 #include <klocalizedstring.h>
 
 #include <KisScreenMigrationTracker.h>
@@ -204,13 +211,11 @@ LayerBox::LayerBox()
     m_wdgLayerBox->bnRaise->setEnabled(false);
 
     m_wdgLayerBox->doubleOpacity->setRange(0, 100, 0);
-    m_wdgLayerBox->doubleOpacity->setFixedHeight(22);
-    m_wdgLayerBox->doubleOpacity->setMaximumWidth(135);
-    m_wdgLayerBox->cmbComposite->setFixedHeight(22);
-    m_wdgLayerBox->cmbComposite->setMaximumWidth(135);
-    if (cfg.sliderLabels()) {
-        m_wdgLayerBox->opacityLabel->hide();
-    }
+    m_wdgLayerBox->doubleOpacity->hide();
+    m_wdgLayerBox->opacityLabel->hide();
+    m_wdgLayerBox->cmbComposite->hide();
+    m_wdgLayerBox->bnLayerFilters->hide();
+    m_wdgLayerBox->bnProperties->hide();
     KisSpinBoxI18nHelper::setText(m_wdgLayerBox->doubleOpacity,
                                   i18nc("{n} is the number value, % is the percent sign", "{n}%"));
 
@@ -819,6 +824,46 @@ void LayerBox::slotContextMenuRequested(const QPoint &pos, const QModelIndex &in
 
     if (m_canvas) {
         QMenu menu;
+
+        // Opacity slider & Blending Mode inside right-click menu
+        QWidget *controlsWidget = new QWidget(&menu);
+        QVBoxLayout *ctrlLayout = new QVBoxLayout(controlsWidget);
+        ctrlLayout->setContentsMargins(10, 8, 10, 6);
+        ctrlLayout->setSpacing(6);
+
+        QHBoxLayout *opRow = new QHBoxLayout();
+        opRow->setContentsMargins(0, 0, 0, 0);
+        QLabel *opTitle = new QLabel(i18n("Opacity:"), controlsWidget);
+        QLabel *opValLbl = new QLabel(QString("%1%").arg(qRound(m_wdgLayerBox->doubleOpacity->value())), controlsWidget);
+        QSlider *opSlider = new QSlider(Qt::Horizontal, controlsWidget);
+        opSlider->setRange(0, 100);
+        opSlider->setValue(qRound(m_wdgLayerBox->doubleOpacity->value()));
+        opSlider->setMinimumWidth(130);
+        opSlider->setEnabled(m_wdgLayerBox->doubleOpacity->isEnabled());
+        connect(opSlider, &QSlider::valueChanged, this, [this, opValLbl](int val) {
+            opValLbl->setText(QString("%1%").arg(val));
+            m_wdgLayerBox->doubleOpacity->setValue(val);
+        });
+        opRow->addWidget(opTitle);
+        opRow->addWidget(opSlider, 1);
+        opRow->addWidget(opValLbl);
+        ctrlLayout->addLayout(opRow);
+
+        QComboBox *blendCombo = new QComboBox(controlsWidget);
+        for (int i = 0; i < m_wdgLayerBox->cmbComposite->count(); ++i) {
+            blendCombo->addItem(m_wdgLayerBox->cmbComposite->itemText(i));
+        }
+        blendCombo->setCurrentIndex(m_wdgLayerBox->cmbComposite->currentIndex());
+        blendCombo->setEnabled(m_wdgLayerBox->cmbComposite->isEnabled());
+        connect(blendCombo, SIGNAL(activated(int)), m_wdgLayerBox->cmbComposite, SLOT(setCurrentIndex(int)));
+        connect(blendCombo, SIGNAL(activated(int)), this, SLOT(slotCompositeOpChanged(int)));
+        ctrlLayout->addWidget(blendCombo);
+
+        QWidgetAction *ctrlAction = new QWidgetAction(&menu);
+        ctrlAction->setDefaultWidget(controlsWidget);
+        menu.addAction(ctrlAction);
+        menu.addSeparator();
+
         updateLayerOpMenu(index, menu);
         menu.exec(pos);
     }

@@ -482,12 +482,21 @@ void KisCustomImageWidget::heightChanged(double value)
 
 void KisCustomImageWidget::createImage()
 {
-    if (m_width < 800.0 || m_height < 800.0) {
+    double resolution = 1.0;
+    if (cmbResolutionUnit->currentText() == pixelsInchStr()) {
+        resolution = doubleResolution->value() / 72.0;
+    } else if (cmbResolutionUnit->currentText() == pixelsCentimeterStr()) {
+        resolution = doubleResolution->value() / 28.34;
+    }
+    const qint32 pxW = static_cast<qint32>(0.5 + KoUnit(KoUnit::Pixel, resolution).toUserValuePrecise(m_width));
+    const qint32 pxH = static_cast<qint32>(0.5 + KoUnit(KoUnit::Pixel, resolution).toUserValuePrecise(m_height));
+
+    if (pxW < 400 || pxH < 400) {
         const QMessageBox::StandardButton answer = QMessageBox::warning(
             this,
             i18n("Low Resolution Warning"),
-            i18n("This canvas is pretty small (%1 x %2 px), so your brush strokes may look pixelated! Are you sure you want to continue? (Great for pixel art, though!)",
-                 qRound(m_width), qRound(m_height)),
+            i18n("This canvas is very small (%1 x %2 px), so your brush strokes may look pixelated! Are you sure you want to continue? (Great for pixel art, though!)",
+                 pxW, pxH),
             QMessageBox::Yes | QMessageBox::Cancel,
             QMessageBox::Cancel);
         if (answer != QMessageBox::Yes) {
@@ -495,7 +504,7 @@ void KisCustomImageWidget::createImage()
         }
     }
 
-    if (m_width * m_height > 36000000.0 || m_width > 8000.0 || m_height > 8000.0) {
+    if (static_cast<qint64>(pxW) * static_cast<qint64>(pxH) > 36000000LL || pxW > 8000 || pxH > 8000) {
         const QMessageBox::StandardButton answer = QMessageBox::warning(
             this,
             i18n("Huge Canvas Warning"),

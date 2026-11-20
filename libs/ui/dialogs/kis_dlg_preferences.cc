@@ -244,6 +244,26 @@ GeneralTab::GeneralTab(QWidget *_parent, const char *_name)
         scrollAreaWidgetContents->parentWidget()->setAutoFillBackground(false);
     }
 
+    if (QLayout *genLayout = scrollAreaWidgetContents->layout()) {
+        QHBoxLayout *sbRow = new QHBoxLayout();
+        QLabel *sbLbl = new QLabel(i18n("Sidebar Zorluğu:"), scrollAreaWidgetContents);
+        QComboBox *sbCombo = new QComboBox(scrollAreaWidgetContents);
+        sbCombo->addItem(i18n("Basit Mod (Temel Araçlar)"), true);
+        sbCombo->addItem(i18n("Gelişmiş Mod (Tüm Araçlar)"), false);
+        KConfigGroup drawGrp = KSharedConfig::openConfig()->group("Draworever");
+        const bool isSimple = drawGrp.readEntry("SidebarSimpleMode", false);
+        sbCombo->setCurrentIndex(isSimple ? 0 : 1);
+        connect(sbCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [sbCombo](int) {
+            KConfigGroup grp = KSharedConfig::openConfig()->group("Draworever");
+            grp.writeEntry("SidebarSimpleMode", sbCombo->currentData().toBool());
+            grp.sync();
+        });
+        sbRow->addWidget(sbLbl);
+        sbRow->addWidget(sbCombo);
+        sbRow->addStretch();
+        genLayout->addItem(sbRow);
+    }
+
     //
     // Cursor Tab
     //
@@ -2680,7 +2700,7 @@ KisDlgPreferences::KisDlgPreferences(QWidget* parent, const char* name)
     : KPageDialog(parent)
 {
     Q_UNUSED(name);
-    setWindowTitle(i18n("Configure Krita"));
+    setWindowTitle(i18n("Configure Draworever"));
     setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel | QDialogButtonBox::RestoreDefaults);
 
     setFaceType(KPageDialog::List);

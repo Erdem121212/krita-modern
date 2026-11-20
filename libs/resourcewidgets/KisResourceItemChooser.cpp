@@ -727,18 +727,27 @@ void KisResourceItemChooser::applyVerticalLayout()
     d->view->setItemSize(QSize(chooserSync->baseLength(), chooserSync->baseLength()));
 
     QGridLayout* thisLayout = dynamic_cast<QGridLayout*>(layout());
-    thisLayout->addWidget(d->tagManager->tagChooserWidget(), 0, 0);
-    thisLayout->addWidget(d->viewModeButton, 0, 1);
-    thisLayout->addWidget(d->storagePopupButton, 0, 2);
-    thisLayout->addWidget(d->resourcesSplitter, 1, 0, 1, 3);
-    thisLayout->setRowStretch(1, 1);
-    thisLayout->addWidget(d->tagManager->tagFilterWidget(), 2, 0, 1, 3);
-    thisLayout->addWidget(d->importExportBtns, 3, 0, 1, 3);
+    if (d->resourceType == ResourceType::PaintOpPresets) {
+        thisLayout->addWidget(d->tagManager->tagChooserWidget(), 0, 0);
+        thisLayout->addWidget(d->tagManager->tagFilterWidget(), 0, 1);
+        thisLayout->addWidget(d->storagePopupButton, 0, 2);
+        thisLayout->addWidget(d->resourcesSplitter, 1, 0, 1, 3);
+        thisLayout->setRowStretch(1, 1);
+        thisLayout->addWidget(d->importExportBtns, 2, 0, 1, 3);
+        d->viewModeButton->setVisible(false);
+        d->storagePopupButton->setVisible(d->showStoragePopupBtn);
+    } else {
+        thisLayout->addWidget(d->tagManager->tagChooserWidget(), 0, 0);
+        thisLayout->addWidget(d->viewModeButton, 0, 1);
+        thisLayout->addWidget(d->storagePopupButton, 0, 2);
+        thisLayout->addWidget(d->resourcesSplitter, 1, 0, 1, 3);
+        thisLayout->setRowStretch(1, 1);
+        thisLayout->addWidget(d->tagManager->tagFilterWidget(), 2, 0, 1, 3);
+        thisLayout->addWidget(d->importExportBtns, 3, 0, 1, 3);
 
-    d->viewModeButton->setVisible(d->showViewModeBtn);
-    d->storagePopupButton->setVisible(d->showStoragePopupBtn);
-
-    d->viewModeButton->setVisible(d->showViewModeBtn);
+        d->viewModeButton->setVisible(d->showViewModeBtn);
+        d->storagePopupButton->setVisible(d->showStoragePopupBtn);
+    }
     d->layout = Layout::Vertical;
 }
 

@@ -87,9 +87,10 @@ KisPaintOpPresetsChooserPopup::KisPaintOpPresetsChooserPopup(QWidget * parent)
     m_d->uiWdgPaintOpPresets.wdgPresetChooser->setViewMode(mode);
     m_d->uiWdgPaintOpPresets.wdgPresetChooser->showTaggingBar(true);
 
-    m_d->uiWdgPaintOpPresets.wdgPresetChooser->itemChooser()->showViewModeBtn(true);
+    m_d->uiWdgPaintOpPresets.wdgPresetChooser->itemChooser()->showViewModeBtn(false);
     m_d->viewModeButton = m_d->uiWdgPaintOpPresets.wdgPresetChooser->itemChooser()->viewModeButton();
     m_d->viewModeButton->setPopupWidget(menu);
+    m_d->viewModeButton->hide();
 
     // Compact category/tag filter bar
     KisResourceItemChooser *itemChooser = m_d->uiWdgPaintOpPresets.wdgPresetChooser->itemChooser();

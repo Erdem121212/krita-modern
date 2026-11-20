@@ -80,6 +80,7 @@ public:
         m_hexEdit = new QLineEdit(this);
         m_hexEdit->setMaxLength(7);
         m_hexEdit->setFixedHeight(24);
+        m_hexEdit->setFocusPolicy(Qt::ClickFocus);
 
         hexRow->addWidget(m_swatch);
         hexRow->addWidget(hexLbl);
@@ -99,6 +100,7 @@ public:
                 setColorFromExternal(c);
                 emitColorChanged();
             }
+            m_hexEdit->clearFocus();
         });
 
         setColorFromExternal(QColor(255, 0, 0));

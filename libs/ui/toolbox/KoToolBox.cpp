@@ -238,6 +238,38 @@ void KoToolBox::setButtonsVisible(const QList<QString> &codes)
     } else {
         disableButtonsByName(disabledTools);
     }
+
+    // In Draworever Simple Mode, hide complex/rarely used tools
+    KConfigGroup drawGrp = KSharedConfig::openConfig()->group("Draworever");
+    if (drawGrp.readEntry("SidebarSimpleMode", false)) {
+        static const QSet<QString> allowedSimpleTools = {
+            QStringLiteral("KritaShape/KisToolBrush"),
+            QStringLiteral("KritaShape/KisToolLine"),
+            QStringLiteral("KritaShape/KisToolRectangle"),
+            QStringLiteral("KritaShape/KisToolEllipse"),
+            QStringLiteral("KritaFill/KisToolFill"),
+            QStringLiteral("KritaFill/KisToolGradient"),
+            QStringLiteral("KritaSelected/KisToolColorSampler"),
+            QStringLiteral("KritaTransform/KisToolMove"),
+            QStringLiteral("KisToolTransform"),
+            QStringLiteral("KisToolCrop"),
+            QStringLiteral("KisToolSelectRectangular"),
+            QStringLiteral("KisToolSelectOutline"),
+            QStringLiteral("KisToolSelectContiguous"),
+            QStringLiteral("PanTool"),
+            QStringLiteral("ZoomTool"),
+            QStringLiteral("KritaShape/KisToolReferenceWindow"),
+            QStringLiteral("SvgTextTool"),
+            QStringLiteral("InteractionTool")
+        };
+        for (QToolButton *button : d->visibilityCodes.keys()) {
+            if (!allowedSimpleTools.contains(button->objectName())) {
+                button->setVisible(false);
+            }
+        }
+        layout()->invalidate();
+        update();
+    }
 }
 
 void KoToolBox::setCurrentLayer(const KoCanvasController *canvas, const KoShapeLayer *layer)

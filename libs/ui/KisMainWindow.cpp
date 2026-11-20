@@ -148,6 +148,9 @@
 #include <KisUndoActionsUpdateManager.h>
 #include "KisWelcomePageWidget.h"
 #include "KisBrushShopDialog.h"
+#include <QKeySequence>
+#include <QTimer>
+#include <QToolBar>
 #include "KisRecentDocumentsModelWrapper.h"
 #include <KritaVersionWrapper.h>
 #include "KisCanvasWindow.h"
@@ -436,7 +439,7 @@ KisMainWindow::KisMainWindow(QUuid uuid)
     d->viewManager = new KisViewManager(this, actionCollection());
     KConfigGroup group( KSharedConfig::openConfig(), "theme");
 #ifndef Q_OS_HAIKU
-    d->themeManager = new Digikam::ThemeManager(group.readEntry("Theme", "Krita dark"), this);
+    d->themeManager = new Digikam::ThemeManager(group.readEntry("Theme", "Krita darker"), this);
 #endif
     d->windowStateConfig = KSharedConfig::openConfig()->group("MainWindow");
 
@@ -695,11 +698,157 @@ KisMainWindow::KisMainWindow(QUuid uuid)
 
     this->winId(); // Ensures the native window has been created.
 
-    QAction *shopAction = menuBar()->addAction(i18n("Shop"));
+    QAction *shopAction = menuBar()->addAction(KisIconUtils::loadIcon(QStringLiteral("download")), i18n("Shop"));
     connect(shopAction, &QAction::triggered, this, [this]() {
         KisBrushShopDialog dlg(this);
         dlg.exec();
     });
+
+    // Assign icons to top-level menu bar items
+    const struct {
+        const char *objName;
+        const char *iconName;
+    } menuIcons[] = {
+        { "file", "document-open" },
+        { "edit", "edit-cut" },
+        { "view", "view-preview" },
+        { "image", "image-x-generic" },
+        { "layer", "layer-visible-on" },
+        { "select", "select-rectangular" },
+        { "filter", "view-filter" },
+        { "tools", "configure" },
+        { "settings", "preferences-system" },
+        { "window", "window-duplicate" },
+        { "help", "help-contents" }
+    };
+    for (QAction *act : menuBar()->actions()) {
+        if (!act->menu()) continue;
+        const QString mname = act->menu()->objectName().toLower();
+        for (const auto &mi : menuIcons) {
+            if (mname.contains(QLatin1String(mi.objName))) {
+                act->setIcon(KisIconUtils::loadIcon(QLatin1String(mi.iconName)));
+                break;
+            }
+        }
+    }
+
+    // Quick Canvas Icon Sidebar (Layers, Color Selector, Tool Options, Brush Presets)
+    QToolBar *quickSidebar = new QToolBar(i18n("Quick Panels"), this);
+    quickSidebar->setObjectName(QStringLiteral("draworeverQuickSidebar"));
+    quickSidebar->setMovable(false);
+    quickSidebar->setIconSize(QSize(20, 20));
+    addToolBar(Qt::RightToolBarArea, quickSidebar);
+
+    auto toggleDocker = [this](const QString &dockerName, bool forceFloat = false) {
+        for (QDockWidget *dock : findChildren<QDockWidget*>()) {
+            if (dock->objectName() == dockerName) {
+                if (forceFloat && !dock->isFloating()) {
+                    dock->setFloating(true);
+                }
+                dock->setVisible(!dock->isVisible());
+                if (dock->isVisible()) {
+                    dock->raise();
+                }
+                break;
+            }
+        }
+    };
+
+    QAction *actLayers = quickSidebar->addAction(KisIconUtils::loadIcon(QStringLiteral("layer-visible-on")), i18n("Layers"));
+    connect(actLayers, &QAction::triggered, this, [toggleDocker]() {
+        toggleDocker(QStringLiteral("LayerBox"));
+    });
+
+    QAction *actColor = quickSidebar->addAction(KisIconUtils::loadIcon(QStringLiteral("krita_tool_color_sampler")), i18n("Color Selector"));
+    connect(actColor, &QAction::triggered, this, [this, toggleDocker]() {
+        KConfigGroup drawGrp(KSharedConfig::openConfig(), "Draworever");
+        if (!drawGrp.hasKey("ColorSelectorAlwaysWindow")) {
+            const auto res = QMessageBox::question(
+                this,
+                i18n("Draworever"),
+                i18n("Gelişmiş Renk Seçimi aracı her zaman pencere modunda açılsın mı?"),
+                QMessageBox::Yes | QMessageBox::No,
+                QMessageBox::Yes);
+            drawGrp.writeEntry("ColorSelectorAlwaysWindow", res == QMessageBox::Yes);
+            drawGrp.sync();
+        }
+        const bool alwaysWin = drawGrp.readEntry("ColorSelectorAlwaysWindow", false);
+        toggleDocker(QStringLiteral("ColorSelectorNg"), alwaysWin);
+    });
+
+    QAction *actToolOpts = quickSidebar->addAction(KisIconUtils::loadIcon(QStringLiteral("configure")), i18n("Tool Options"));
+    connect(actToolOpts, &QAction::triggered, this, [toggleDocker]() {
+        toggleDocker(QStringLiteral("sharedtooldocker"));
+    });
+
+    QAction *actPresets = quickSidebar->addAction(KisIconUtils::loadIcon(QStringLiteral("krita_tool_freehand")), i18n("Brush Presets"));
+    connect(actPresets, &QAction::triggered, this, [toggleDocker]() {
+        toggleDocker(QStringLiteral("PresetDocker"));
+    });
+
+    // Respect Editable vs Fixed top toolbar setting from setup
+    {
+        KConfigGroup drawGrp(KSharedConfig::openConfig(), "Draworever");
+        const bool editableTopBar = drawGrp.readEntry("EditableTopBar", false);
+        for (QToolBar *tb : findChildren<QToolBar*>()) {
+            if (tb == quickSidebar) continue;
+            tb->setMovable(editableTopBar);
+        }
+    }
+
+    // On-Screen Shortcut HUD (OSD) when pressing shortcuts like Ctrl+Z, B, E, etc.
+    QLabel *shortcutHud = new QLabel(this);
+    shortcutHud->setObjectName(QStringLiteral("draworeverShortcutHud"));
+    shortcutHud->setAttribute(Qt::WA_TransparentForMouseEvents);
+    shortcutHud->setAlignment(Qt::AlignCenter);
+    shortcutHud->setStyleSheet(QStringLiteral(
+        "QLabel#draworeverShortcutHud {"
+        "  background-color: rgba(20, 20, 24, 215);"
+        "  color: #ffffff;"
+        "  border: 1px solid rgba(255, 255, 255, 50);"
+        "  border-radius: 10px;"
+        "  padding: 6px 14px;"
+        "  font-size: 11pt;"
+        "  font-weight: bold;"
+        "}"
+    ));
+    shortcutHud->hide();
+    QTimer *hudTimer = new QTimer(this);
+    hudTimer->setSingleShot(true);
+    hudTimer->setInterval(900);
+    connect(hudTimer, &QTimer::timeout, shortcutHud, &QLabel::hide);
+
+    class ShortcutHudFilter : public QObject {
+    public:
+        ShortcutHudFilter(QMainWindow *win, QLabel *hud, QTimer *timer)
+            : QObject(win), m_win(win), m_hud(hud), m_timer(timer) {}
+        bool eventFilter(QObject *obj, QEvent *ev) override {
+            if (ev->type() == QEvent::KeyPress && m_win->isActiveWindow()) {
+                QKeyEvent *ke = static_cast<QKeyEvent*>(ev);
+                if (ke->key() >= Qt::Key_Shift && ke->key() <= Qt::Key_Alt) {
+                    return false;
+                }
+                const Qt::KeyboardModifiers mods = ke->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier);
+                if (mods & Qt::ControlModifier) {
+                    const QString seq = QKeySequence(int(mods) | ke->key()).toString(QKeySequence::NativeText);
+                    if (!seq.isEmpty()) {
+                        m_hud->setText(seq);
+                        m_hud->adjustSize();
+                        m_hud->move((m_win->width() - m_hud->width()) / 2, m_win->height() - m_hud->height() - 48);
+                        m_hud->show();
+                        m_hud->raise();
+                        m_timer->start();
+                    }
+                }
+            }
+            Q_UNUSED(obj);
+            return false;
+        }
+        QMainWindow *m_win;
+        QLabel *m_hud;
+        QTimer *m_timer;
+    };
+    qApp->installEventFilter(new ShortcutHudFilter(this, shortcutHud, hudTimer));
 
 #ifdef Q_OS_ANDROID
     // HACK: This prevents the mainWindow from going beyond the screen with no
@@ -1113,7 +1262,7 @@ void KisMainWindow::setCanvasDetached(bool detach)
 {
 #ifdef Q_OS_ANDROID
     if (detach) {
-        QMessageBox::warning(this, i18nc("@title:window", "Krita"),
+        QMessageBox::warning(this, i18nc("@title:window", "Draworever"),
                              "Detach Canvas is unsupported on Android");
     }
 #else
@@ -1183,7 +1332,7 @@ bool KisMainWindow::openDocument(const QString &path, OpenFlags flags)
 
     if (!QFile(path).exists()) {
         if (!(flags & BatchMode)) {
-            QMessageBox::critical(qApp->activeWindow(), i18nc("@title:window", "Krita"), i18n("The file %1 does not exist.", path));
+            QMessageBox::critical(qApp->activeWindow(), i18nc("@title:window", "Draworever"), i18n("The file %1 does not exist.", path));
         }
         KisRecentFilesManager::instance()->remove(QUrl::fromLocalFile(path)); //remove the file from the recent-opened-file-list
         return false;
@@ -1327,7 +1476,7 @@ void KisMainWindow::slotSaveCanceled(const QString &errMsg)
 {
     if (!errMsg.isEmpty()) {   // empty when cancelled by user
         KisUsageLogger::log(QString("Saving cancelled. Error:").arg(errMsg));
-        QMessageBox::critical(this, i18nc("@title:window", "Krita"), errMsg);
+        QMessageBox::critical(this, i18nc("@title:window", "Draworever"), errMsg);
     }
     else {
         KisUsageLogger::log(QString("Saving cancelled by the user."));
@@ -1424,7 +1573,7 @@ bool KisMainWindow::saveDocument(KisDocument *document, bool saveas, bool isExpo
     }
     else if (dlg.result() == KisDelayedSaveDialog::Ignored) {
         QMessageBox::critical(qApp->activeWindow(),
-                              i18nc("@title:window", "Krita"),
+                              i18nc("@title:window", "Draworever"),
                               i18n("You are saving a file while the image is "
                                    "still rendering. The saved file may be "
                                    "incomplete or corrupted.\n\n"
@@ -2171,7 +2320,7 @@ void KisMainWindow::slotStoragesWarning(const QString &/*location*/)
 
     if (!checkPaintOpAvailable()) {
         warning += i18n("\nThere are no brush presets available. Please enable a bundle that has presets before continuing.\n");
-        QMessageBox::critical(this, i18nc("@title:window", "Krita"), warning);
+        QMessageBox::critical(this, i18nc("@title:window", "Draworever"), warning);
 
         QAction *action = actionCollection()->action("manage_bundles");
         if (action) {
@@ -2180,7 +2329,7 @@ void KisMainWindow::slotStoragesWarning(const QString &/*location*/)
     }
 
     if (!checkActiveBundlesAvailable()) {
-        QMessageBox::warning(this, i18nc("@title:window", "Krita"), warning + i18n("\nOnly your local resources are available."));
+        QMessageBox::warning(this, i18nc("@title:window", "Draworever"), warning + i18n("\nOnly your local resources are available."));
     }
 
 }
@@ -2319,7 +2468,7 @@ void KisMainWindow::importAnimation()
         if (!status.isOk() && !status.isInternalError()) {
             QString msg = status.errorMessage();
             if (!msg.isEmpty())
-                QMessageBox::critical(qApp->activeWindow(), i18nc("@title:window", "Krita"), i18n("Could not finish import animation:\n%1", msg));
+                QMessageBox::critical(qApp->activeWindow(), i18nc("@title:window", "Draworever"), i18n("Could not finish import animation:\n%1", msg));
         }
         activeView()->canvasBase()->refetchDataFromImage();
     }
@@ -2380,7 +2529,7 @@ void KisMainWindow::importVideoAnimation()
             KoColor bgColor(qc, cs);
 
             if (!document->newImage(name, width, height, cs, bgColor, KisConfig::RASTER_LAYER, 1, "", double(resolution / 72) )) {
-                QMessageBox::critical(qApp->activeWindow(), i18nc("@title:window", "Krita"), i18n("Failed to create new document. Animation import aborted."));
+                QMessageBox::critical(qApp->activeWindow(), i18nc("@title:window", "Draworever"), i18n("Failed to create new document. Animation import aborted."));
                 return;
             }
 
@@ -2399,7 +2548,7 @@ void KisMainWindow::importVideoAnimation()
         if (!status.isOk() && !status.isInternalError()) {
             QString msg = status.errorMessage();
             if (!msg.isEmpty())
-                QMessageBox::critical(qApp->activeWindow(), i18nc("@title:window", "Krita"), i18n("Could not finish import animation:\n%1", msg));
+                QMessageBox::critical(qApp->activeWindow(), i18nc("@title:window", "Draworever"), i18n("Could not finish import animation:\n%1", msg));
         }
 
         activeView()->canvasBase()->refetchDataFromImage();
@@ -3042,7 +3191,7 @@ void KisMainWindow::newWindow()
 #ifdef Q_OS_ANDROID
     // Check if current mainwindow exists, just to be sure.
     if (KisPart::instance()->currentMainwindow()) {
-        QMessageBox::warning(this, i18nc("@title:window", "Krita"),
+        QMessageBox::warning(this, i18nc("@title:window", "Draworever"),
                              "Creating a New Main Window is unsupported on Android");
         return;
     }
