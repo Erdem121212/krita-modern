@@ -148,6 +148,7 @@
 #include <KisUndoActionsUpdateManager.h>
 #include "KisWelcomePageWidget.h"
 #include "KisBrushShopDialog.h"
+#include "KisEffectsMenuDialog.h"
 #include <QKeySequence>
 #include <QTimer>
 #include <QToolBar>
@@ -705,6 +706,13 @@ KisMainWindow::KisMainWindow(QUuid uuid)
         dlg.exec();
     });
 
+    QAction *effectsAction = menuBar()->addAction(i18n("Effects"));
+    effectsAction->setIcon(KisIconUtils::loadIcon(QStringLiteral("view-filter")));
+    connect(effectsAction, &QAction::triggered, this, [this]() {
+        KisEffectsMenuDialog dlg(this, this);
+        dlg.exec();
+    });
+
     // Assign icons to top-level menu bar items
     const struct {
         const char *objName;
@@ -734,34 +742,90 @@ KisMainWindow::KisMainWindow(QUuid uuid)
     }
 
     // Quick Canvas Icon Sidebar (Layers, Color Selector, Tool Options, Brush Presets)
+    // Popover on left-click, right-click -> Pin / Unpin
     QToolBar *quickSidebar = new QToolBar(i18n("Quick Panels"), this);
     quickSidebar->setObjectName(QStringLiteral("draworeverQuickSidebar"));
     quickSidebar->setMovable(false);
-    quickSidebar->setIconSize(QSize(20, 20));
+    quickSidebar->setIconSize(QSize(22, 22));
     addToolBar(Qt::RightToolBarArea, quickSidebar);
 
-    auto toggleDocker = [this](const QString &dockerName, bool forceFloat = false) {
+    const QStringList quickDockerNames = {
+        QStringLiteral("LayerBox"),
+        QStringLiteral("ColorSelectorNg"),
+        QStringLiteral("sharedtooldocker"),
+        QStringLiteral("PresetDocker")
+    };
+
+    auto isDockerPinned = [](const QString &name) -> bool {
+        KConfigGroup drawGrp(KSharedConfig::openConfig(), "Draworever");
+        return drawGrp.readEntry(QStringLiteral("Pinned_") + name, false);
+    };
+
+    auto openQuickPanel = [this, quickSidebar, quickDockerNames, isDockerPinned](const QString &dockerName, bool forceFloat = false) {
+        QDockWidget *target = nullptr;
         for (QDockWidget *dock : findChildren<QDockWidget*>()) {
             if (dock->objectName() == dockerName) {
-                if (forceFloat && !dock->isFloating()) {
-                    dock->setFloating(true);
-                }
-                dock->setVisible(!dock->isVisible());
-                if (dock->isVisible()) {
-                    dock->raise();
-                }
+                target = dock;
                 break;
             }
+        }
+        if (!target) return;
+
+        const bool willShow = !target->isVisible();
+        if (willShow && !isDockerPinned(dockerName)) {
+            // Close other unpinned quick popovers
+            for (const QString &otherName : quickDockerNames) {
+                if (otherName == dockerName || isDockerPinned(otherName)) continue;
+                for (QDockWidget *otherDock : findChildren<QDockWidget*>()) {
+                    if (otherDock->objectName() == otherName) {
+                        otherDock->hide();
+                    }
+                }
+            }
+            target->setFloating(true);
+            const QPoint sbPos = quickSidebar->mapToGlobal(QPoint(0, 40));
+            target->move(sbPos.x() - target->width() - 8, sbPos.y());
+        } else if (willShow && forceFloat && !target->isFloating()) {
+            target->setFloating(true);
+        }
+        target->setVisible(willShow);
+        if (willShow) {
+            target->raise();
+        }
+    };
+
+    auto attachPinMenu = [this, quickSidebar, isDockerPinned](QAction *act, const QString &dockerName) {
+        if (QWidget *btn = quickSidebar->widgetForAction(act)) {
+            btn->setContextMenuPolicy(Qt::CustomContextMenu);
+            connect(btn, &QWidget::customContextMenuRequested, this, [this, btn, dockerName, isDockerPinned](const QPoint &pos) {
+                QMenu menu(this);
+                const bool pinned = isDockerPinned(dockerName);
+                QAction *pinAct = menu.addAction(pinned ? i18n("Unpin") : i18n("Pin"));
+                connect(pinAct, &QAction::triggered, this, [this, dockerName, pinned]() {
+                    KConfigGroup drawGrp(KSharedConfig::openConfig(), "Draworever");
+                    drawGrp.writeEntry(QStringLiteral("Pinned_") + dockerName, !pinned);
+                    drawGrp.sync();
+                    for (QDockWidget *dock : findChildren<QDockWidget*>()) {
+                        if (dock->objectName() == dockerName) {
+                            dock->setFloating(pinned);
+                            dock->setVisible(!pinned);
+                            break;
+                        }
+                    }
+                });
+                menu.exec(btn->mapToGlobal(pos));
+            });
         }
     };
 
     QAction *actLayers = quickSidebar->addAction(KisIconUtils::loadIcon(QStringLiteral("layer-visible-on")), i18n("Layers"));
-    connect(actLayers, &QAction::triggered, this, [toggleDocker]() {
-        toggleDocker(QStringLiteral("LayerBox"));
+    connect(actLayers, &QAction::triggered, this, [openQuickPanel]() {
+        openQuickPanel(QStringLiteral("LayerBox"));
     });
+    attachPinMenu(actLayers, QStringLiteral("LayerBox"));
 
     QAction *actColor = quickSidebar->addAction(KisIconUtils::loadIcon(QStringLiteral("krita_tool_color_sampler")), i18n("Color Selector"));
-    connect(actColor, &QAction::triggered, this, [this, toggleDocker]() {
+    connect(actColor, &QAction::triggered, this, [this, openQuickPanel]() {
         KConfigGroup drawGrp(KSharedConfig::openConfig(), "Draworever");
         if (!drawGrp.hasKey("ColorSelectorAlwaysWindow")) {
             const auto res = QMessageBox::question(
@@ -774,17 +838,33 @@ KisMainWindow::KisMainWindow(QUuid uuid)
             drawGrp.sync();
         }
         const bool alwaysWin = drawGrp.readEntry("ColorSelectorAlwaysWindow", false);
-        toggleDocker(QStringLiteral("ColorSelectorNg"), alwaysWin);
+        openQuickPanel(QStringLiteral("ColorSelectorNg"), alwaysWin);
     });
+    attachPinMenu(actColor, QStringLiteral("ColorSelectorNg"));
 
     QAction *actToolOpts = quickSidebar->addAction(KisIconUtils::loadIcon(QStringLiteral("configure")), i18n("Tool Options"));
-    connect(actToolOpts, &QAction::triggered, this, [toggleDocker]() {
-        toggleDocker(QStringLiteral("sharedtooldocker"));
+    connect(actToolOpts, &QAction::triggered, this, [openQuickPanel]() {
+        openQuickPanel(QStringLiteral("sharedtooldocker"));
     });
+    attachPinMenu(actToolOpts, QStringLiteral("sharedtooldocker"));
 
     QAction *actPresets = quickSidebar->addAction(KisIconUtils::loadIcon(QStringLiteral("krita_tool_freehand")), i18n("Brush Presets"));
-    connect(actPresets, &QAction::triggered, this, [toggleDocker]() {
-        toggleDocker(QStringLiteral("PresetDocker"));
+    connect(actPresets, &QAction::triggered, this, [openQuickPanel]() {
+        openQuickPanel(QStringLiteral("PresetDocker"));
+    });
+    attachPinMenu(actPresets, QStringLiteral("PresetDocker"));
+
+    // Hide unpinned quick dockers at startup so canvas stays spacious
+    QTimer::singleShot(150, this, [this, quickDockerNames, isDockerPinned]() {
+        for (const QString &name : quickDockerNames) {
+            if (!isDockerPinned(name)) {
+                for (QDockWidget *dock : findChildren<QDockWidget*>()) {
+                    if (dock->objectName() == name) {
+                        dock->hide();
+                    }
+                }
+            }
+        }
     });
 
     // Respect Editable vs Fixed top toolbar setting from setup

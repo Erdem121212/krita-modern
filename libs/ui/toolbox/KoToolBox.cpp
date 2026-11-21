@@ -98,9 +98,9 @@ KoToolBox::KoToolBox()
     const int widgetsScreen = KisPortingUtils::getScreenNumberForWidget(QApplication::activeWindow());
     const int primaryScreen = 0; //In QT, primary screen should always be the first index of QGuiApplication::screens()
     const int screen = (widgetsScreen >= 0 && widgetsScreen < QGuiApplication::screens().size()) ? widgetsScreen : primaryScreen;
-    const int toolbuttonSize = buttonSize(screen);
+    const int toolbuttonSize = qMax(28, buttonSize(screen));
     KConfigGroup cfg =  KSharedConfig::openConfig()->group("KoToolBox");
-    d->iconSize = cfg.readEntry("iconSize", toolbuttonSize);
+    d->iconSize = qMax(26, cfg.readEntry("iconSize", toolbuttonSize));
 
     setCompact(cfg.readEntry<bool>("compact", false));
 }
