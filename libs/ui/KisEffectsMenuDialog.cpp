@@ -26,6 +26,7 @@
 #include <filter/kis_filter.h>
 #include <filter/kis_filter_configuration.h>
 #include <kis_processing_information.h>
+#include <KisGlobalResourcesInterface.h>
 
 namespace {
 QPixmap makeFilterPreview(const QString &filterId, const QImage &baseThumb, KisImageSP img)
