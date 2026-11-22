@@ -446,6 +446,35 @@ KisMainWindow::KisMainWindow(QUuid uuid)
     KConfigGroup group( KSharedConfig::openConfig(), "theme");
 #ifndef Q_OS_HAIKU
     d->themeManager = new Digikam::ThemeManager(group.readEntry("Theme", "Krita darker"), this);
+    {
+        QPalette darkPal = qApp->palette();
+        const QColor bgWindow(0x0d, 0x0e, 0x12);
+        const QColor bgBase(0x12, 0x13, 0x19);
+        const QColor bgAlt(0x16, 0x18, 0x21);
+        const QColor bgBtn(0x1b, 0x1d, 0x25);
+        const QColor bgMid(0x23, 0x26, 0x32);
+        const QColor bgMidLight(0x1f, 0x22, 0x2d);
+        const QColor accent(0x3b, 0x82, 0xf6);
+        const QColor textBright(0xf5, 0xf7, 0xfa);
+        const QColor textDim(0x9a, 0xa0, 0xb2);
+
+        for (QPalette::ColorGroup cg : { QPalette::Active, QPalette::Inactive }) {
+            darkPal.setColor(cg, QPalette::Window, bgWindow);
+            darkPal.setColor(cg, QPalette::Base, bgBase);
+            darkPal.setColor(cg, QPalette::AlternateBase, bgAlt);
+            darkPal.setColor(cg, QPalette::Button, bgBtn);
+            darkPal.setColor(cg, QPalette::Mid, bgMid);
+            darkPal.setColor(cg, QPalette::Midlight, bgMidLight);
+            darkPal.setColor(cg, QPalette::Dark, QColor(0x09, 0x0a, 0x0d));
+            darkPal.setColor(cg, QPalette::Highlight, accent);
+            darkPal.setColor(cg, QPalette::WindowText, textBright);
+            darkPal.setColor(cg, QPalette::Text, textBright);
+            darkPal.setColor(cg, QPalette::ButtonText, textBright);
+            darkPal.setColor(cg, QPalette::HighlightedText, QColor(0xff, 0xff, 0xff));
+            darkPal.setColor(cg, QPalette::PlaceholderText, textDim);
+        }
+        qApp->setPalette(darkPal);
+    }
 #endif
     d->windowStateConfig = KSharedConfig::openConfig()->group("MainWindow");
 
