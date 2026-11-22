@@ -326,6 +326,10 @@ void KisFirstRunWizard::applyConfiguration()
                 sm->setData(idx, m_chkKrita4Brushes->isChecked() ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
             } else if (loc.contains(QStringLiteral("Krita_3"), Qt::CaseInsensitive)) {
                 sm->setData(idx, m_chkKrita3Brushes->isChecked() ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
+            } else if (loc.contains(QStringLiteral("Kgaia_brushes"), Qt::CaseInsensitive) ||
+                       loc.contains(QStringLiteral("Rakurri_Brush_Set"), Qt::CaseInsensitive) ||
+                       loc.contains(QStringLiteral("stupid_idiot_bundle"), Qt::CaseInsensitive)) {
+                sm->setData(idx, m_chkBuiltinBrushes->isChecked() ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
             }
         }
     }

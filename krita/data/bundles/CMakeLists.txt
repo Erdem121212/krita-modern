@@ -3,6 +3,9 @@ set (krita_BUNDLE_FILES
      Krita_4_Default_Resources.bundle
      Krita_Artists_SeExpr_examples.bundle
      RGBA_brushes.bundle
+     Kgaia_brushes_1.bundle
+     Rakurri_Brush_Set_V2.0.bundle
+     stupid_idiot_bundle.bundle
 )
 
 if (NOT ANDROID)
