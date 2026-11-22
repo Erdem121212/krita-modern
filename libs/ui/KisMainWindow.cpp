@@ -34,6 +34,8 @@
 #include <QUrl>
 #include <QMessageBox>
 #include <QStatusBar>
+#include <QMdiArea>
+#include <QTabBar>
 #include <QStyleFactory>
 #include <QMenu>
 #include <QMenuBar>
@@ -153,6 +155,8 @@
 #include <QToolBar>
 #include <QPushButton>
 #include <QStatusBar>
+#include <QMdiArea>
+#include <QTabBar>
 #include "KisRecentDocumentsModelWrapper.h"
 #include <KritaVersionWrapper.h>
 #include "KisCanvasWindow.h"
@@ -701,7 +705,6 @@ KisMainWindow::KisMainWindow(QUuid uuid)
     this->winId(); // Ensures the native window has been created.
 
     QAction *shopAction = menuBar()->addAction(i18n("Shop"));
-    shopAction->setIcon(KisIconUtils::loadIcon(QStringLiteral("download")));
     connect(shopAction, &QAction::triggered, this, [this]() {
         KisBrushShopDialog dlg(this);
         dlg.exec();
@@ -722,35 +725,14 @@ KisMainWindow::KisMainWindow(QUuid uuid)
     menuBar()->setCornerWidget(exportBtn, Qt::TopRightCorner);
     connect(this, &KisMainWindow::activeViewChanged, exportBtn, [this, exportBtn]() {
         exportBtn->setVisible(activeView() != nullptr);
-    });
-
-    // Assign icons to top-level menu bar items
-    const struct {
-        const char *objName;
-        const char *iconName;
-    } menuIcons[] = {
-        { "file", "document-open" },
-        { "edit", "edit-cut" },
-        { "view", "view-preview" },
-        { "image", "image-x-generic" },
-        { "layer", "layer-visible-on" },
-        { "select", "select-rectangular" },
-        { "filter", "view-filter" },
-        { "tools", "configure" },
-        { "settings", "preferences-system" },
-        { "window", "window-duplicate" },
-        { "help", "help-contents" }
-    };
-    for (QAction *act : menuBar()->actions()) {
-        if (!act->menu()) continue;
-        const QString mname = act->menu()->objectName().toLower();
-        for (const auto &mi : menuIcons) {
-            if (mname.contains(QLatin1String(mi.objName))) {
-                act->setIcon(KisIconUtils::loadIcon(QLatin1String(mi.iconName)));
-                break;
-            }
+        if (statusBar()) {
+            statusBar()->setMaximumHeight(0);
+            statusBar()->hide();
         }
-    }
+        for (QTabBar *tb : findChildren<QTabBar*>()) {
+            tb->setExpanding(false);
+        }
+    });
 
     // Quick Canvas Icon Sidebar (Layers, Color Selector, Tool Options, Brush Presets)
     // Popover on left-click, right-click -> Pin / Unpin
@@ -869,8 +851,8 @@ KisMainWindow::KisMainWindow(QUuid uuid)
     });
     attachPinMenu(actPresets, QStringLiteral("PresetDocker"));
 
-    // Hide unpinned quick dockers at startup so canvas stays spacious
-    QTimer::singleShot(150, this, [this, quickDockerNames, isDockerPinned]() {
+    // Hide unpinned quick dockers & status bar after workspace/layout finishes restoring
+    QTimer::singleShot(450, this, [this, quickDockerNames, isDockerPinned]() {
         for (const QString &name : quickDockerNames) {
             if (!isDockerPinned(name)) {
                 for (QDockWidget *dock : findChildren<QDockWidget*>()) {
@@ -879,6 +861,13 @@ KisMainWindow::KisMainWindow(QUuid uuid)
                     }
                 }
             }
+        }
+        if (statusBar()) {
+            statusBar()->setMaximumHeight(0);
+            statusBar()->hide();
+        }
+        for (QTabBar *tb : findChildren<QTabBar*>()) {
+            tb->setExpanding(false);
         }
     });
 

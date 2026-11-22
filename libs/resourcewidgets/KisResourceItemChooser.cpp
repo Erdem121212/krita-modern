@@ -13,6 +13,7 @@
 #include <math.h>
 
 #include <QGridLayout>
+#include <QCheckBox>
 #include <QButtonGroup>
 #include <QHeaderView>
 #include <QAbstractProxyModel>
@@ -731,6 +732,12 @@ void KisResourceItemChooser::applyVerticalLayout()
         thisLayout->addWidget(d->tagManager->tagChooserWidget(), 0, 0);
         thisLayout->addWidget(d->tagManager->tagFilterWidget(), 0, 1);
         thisLayout->addWidget(d->storagePopupButton, 0, 2);
+        thisLayout->setColumnStretch(0, 1);
+        thisLayout->setColumnStretch(1, 2);
+        thisLayout->setColumnStretch(2, 0);
+        for (QCheckBox *chk : d->tagManager->tagFilterWidget()->findChildren<QCheckBox*>()) {
+            chk->hide();
+        }
         thisLayout->addWidget(d->resourcesSplitter, 1, 0, 1, 3);
         thisLayout->setRowStretch(1, 1);
         thisLayout->addWidget(d->importExportBtns, 2, 0, 1, 3);
