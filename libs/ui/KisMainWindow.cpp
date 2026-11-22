@@ -733,7 +733,7 @@ KisMainWindow::KisMainWindow(QUuid uuid)
 
     this->winId(); // Ensures the native window has been created.
 
-    QAction *shopAction = menuBar()->addAction(i18n("Shop"));
+    QAction *shopAction = menuBar()->addAction(i18n("Brushes"));
     connect(shopAction, &QAction::triggered, this, [this]() {
         KisBrushShopDialog dlg(this);
         dlg.exec();

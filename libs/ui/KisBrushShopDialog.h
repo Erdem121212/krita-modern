@@ -10,9 +10,8 @@
 
 class QListWidget;
 class QLabel;
-class QNetworkAccessManager;
-class QPushButton;
-class QLineEdit;
+class QDragEnterEvent;
+class QDropEvent;
 
 class KRITAUI_EXPORT KisBrushShopDialog : public QDialog
 {
@@ -21,23 +20,19 @@ public:
     explicit KisBrushShopDialog(QWidget *parent = nullptr);
     ~KisBrushShopDialog() override = default;
 
+protected:
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
+
 private Q_SLOTS:
-    void fetchBrushCatalog();
-    void slotInstallSelected();
-    void slotOpenSelectedPage();
-    void slotImportLocalFile();
-    void slotFilterChanged(const QString &text);
+    void slotImportLocalFiles();
+    void refreshBundleList();
 
 private:
-    void downloadAndInstallUrl(const QUrl &url, const QString &suggestedName);
     bool importDownloadedFile(const QString &filePath);
 
-    QNetworkAccessManager *m_nam {nullptr};
-    QLineEdit *m_searchEdit {nullptr};
     QListWidget *m_listWidget {nullptr};
     QLabel *m_statusLabel {nullptr};
-    QPushButton *m_btnInstall {nullptr};
-    QPushButton *m_btnOpenPage {nullptr};
 };
 
 #endif // KIS_BRUSH_SHOP_DIALOG_H
