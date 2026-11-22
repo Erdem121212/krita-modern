@@ -40,7 +40,7 @@ KoDockWidgetTitleBar::KoDockWidgetTitleBar(QDockWidget* dockWidget)
     d->floatButton = new KoDockWidgetTitleBarButton(this);
     d->floatButton->setIcon(d->floatIcon);
     connect(d->floatButton, SIGNAL(clicked()), SLOT(toggleFloating()));
-    d->floatButton->setVisible(true);
+    d->floatButton->setVisible(false);
     d->floatButton->setToolTip(i18nc("@info:tooltip", "Float Docker"));
     d->floatButton->setStyleSheet("border: 0");
 
@@ -48,7 +48,7 @@ KoDockWidgetTitleBar::KoDockWidgetTitleBar(QDockWidget* dockWidget)
     d->closeButton = new KoDockWidgetTitleBarButton(this);
     d->closeButton->setIcon(d->removeIcon);
     connect(d->closeButton, SIGNAL(clicked()), dockWidget, SLOT(close()));
-    d->closeButton->setVisible(true);
+    d->closeButton->setVisible(false);
     d->closeButton->setToolTip(i18nc("@info:tooltip", "Close Docker"));   
     d->closeButton->setStyleSheet("border: 0"); // border makes the header busy looking (appears on some OSs)
 
@@ -57,7 +57,7 @@ KoDockWidgetTitleBar::KoDockWidgetTitleBar(QDockWidget* dockWidget)
     d->lockButton->setCheckable(true);
     d->lockButton->setIcon(d->lockIcon);
     connect(d->lockButton, SIGNAL(toggled(bool)), SLOT(setLocked(bool)));
-    d->lockButton->setVisible(true);
+    d->lockButton->setVisible(false);
     d->lockButton->setToolTip(i18nc("@info:tooltip", "Lock Docker"));
     d->lockButton->setStyleSheet("border: 0");
 
@@ -133,7 +133,7 @@ void KoDockWidgetTitleBar::resizeEvent(QResizeEvent*)
     if (q->isFloating() || (width() < (d->closeButton->width() + d->floatButton->width() + d->lockButton->width()) + 32)) {
         d->lockButton->setVisible(false);
     } else {
-        d->lockButton->setVisible(true);
+        d->lockButton->setVisible(false);
     }
 }
 
@@ -157,7 +157,7 @@ void KoDockWidgetTitleBar::setLocked(bool locked)
     q->toggleViewAction()->setEnabled(!locked);
     d->closeButton->setEnabled(!locked);
     d->floatButton->setEnabled(!locked);
-    d->floatButton->setVisible(!locked);
+    d->floatButton->setVisible(false);
 
     d->updateIcons();
     q->setProperty("Locked", locked);
@@ -186,8 +186,8 @@ void KoDockWidgetTitleBar::Private::featuresChanged(QDockWidget::DockWidgetFeatu
 {
     QDockWidget *q = qobject_cast<QDockWidget*>(thePublic->parentWidget());
 
-    closeButton->setVisible(hasFeature(q, QDockWidget::DockWidgetClosable));
-    floatButton->setVisible(hasFeature(q, QDockWidget::DockWidgetFloatable));
+    closeButton->setVisible(false);
+    floatButton->setVisible(false);
 
     updateButtonSizes();
     thePublic->resizeEvent(0);
@@ -264,7 +264,7 @@ void KoDockWidgetTitleBar::hideEvent(QHideEvent *event){
 void KoDockWidgetTitleBar::showEvent(QShowEvent *event){
     Q_UNUSED(event);
     d->updateButtonSizes();
-    d->closeButton->setVisible(true);
+    d->closeButton->setVisible(false);
 
     /**
      * On Qt6 QDockWidget will read the size hint of the titlebar
