@@ -240,10 +240,10 @@ KisPaintopBox::KisPaintopBox(KisViewManager *viewManager, QWidget *parent, const
     int sliderWidth;
 
     if (sliderLabels) {
-        sliderWidth = 150 * logicalDpiX() / 96;
+        sliderWidth = 72 * logicalDpiX() / 96;
     }
     else {
-        sliderWidth = 78 * logicalDpiX() / 96;
+        sliderWidth = 64 * logicalDpiX() / 96;
     }
 
     for (int i = 0; i < 5; ++i) {

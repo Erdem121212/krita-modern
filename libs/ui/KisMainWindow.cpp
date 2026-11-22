@@ -908,7 +908,8 @@ KisMainWindow::KisMainWindow(QUuid uuid)
         for (QToolBar *tb : findChildren<QToolBar*>()) {
             if (tb == quickSidebar) continue;
             tb->setMovable(editableTopBar);
-            tb->setIconSize(QSize(16, 16));
+            tb->setIconSize(QSize(14, 14));
+            tb->setMaximumHeight(28);
             if (!addedZoomToTop && tb->objectName() == QLatin1String("mainToolBar")) {
                 addedZoomToTop = true;
                 if (QAction *zIn = actionCollection()->action(QStringLiteral("view_zoom_in"))) tb->addAction(zIn);
