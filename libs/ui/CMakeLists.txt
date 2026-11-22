@@ -171,7 +171,6 @@ set(kritaui_LIB_SRCS
     KisWelcomePageWidget.cpp
     KisFirstRunWizard.cpp
     KisBrushShopDialog.cpp
-    KisEffectsMenuDialog.cpp
     KisUiFont.cpp
     KisIdleTasksManager.cpp
     KisIdleTaskStrokeStrategy.cpp

@@ -219,7 +219,11 @@ void KisOpenPane::initTemplates(const QString& templatesResourcePath)
             }
 
             if (!d->m_templatesSeparator) {
-                d->m_templatesSeparator = new KoSectionListItem(d->m_sectionList, "", "", 999);
+                d->m_templatesSeparator = new KoSectionListItem(d->m_sectionList, i18n("Templates"), "Templates", 999);
+                d->m_templatesSeparator->setIcon(0, KisIconUtils::loadIcon(QStringLiteral("view-grid")));
+                d->m_templatesSeparator->setText(0, QString());
+                d->m_templatesSeparator->setToolTip(0, i18n("Şablonlar"));
+                d->m_templatesSeparator->setExpanded(false);
             }
 
             KisTemplatesPane* pane = new KisTemplatesPane(this, group->name(),
@@ -235,6 +239,13 @@ void KisOpenPane::initTemplates(const QString& templatesResourcePath)
                     pane, SLOT(resizeSplitter(KisDetailsPane*,QList<int>)));
             QTreeWidgetItem* item = addPane(group->name(), "Template", group->templates().first()->loadPicture(),
                                             pane, group->sortingWeight() + templateOffset);
+            if (d->m_templatesSeparator && item) {
+                const int idx = d->m_sectionList->indexOfTopLevelItem(item);
+                if (idx >= 0) {
+                    d->m_sectionList->takeTopLevelItem(idx);
+                    d->m_templatesSeparator->addChild(item);
+                }
+            }
 
 
 
@@ -385,6 +396,11 @@ void KisOpenPane::saveSplitterSizes(KisDetailsPane* sender, const QList<int>& si
 
 void KisOpenPane::itemClicked(QTreeWidgetItem* item)
 {
+    if (item && item == d->m_templatesSeparator) {
+        item->setExpanded(!item->isExpanded());
+        return;
+    }
+
     KoSectionListItem* selectedItem = static_cast<KoSectionListItem*>(item);
 
     if (selectedItem && selectedItem->widgetIndex() >= 0) {

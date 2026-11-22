@@ -216,6 +216,7 @@ LayerBox::LayerBox()
     m_wdgLayerBox->cmbComposite->hide();
     m_wdgLayerBox->bnLayerFilters->hide();
     m_wdgLayerBox->bnProperties->hide();
+    m_wdgLayerBox->configureLayerDockerToolbar->hide();
     KisSpinBoxI18nHelper::setText(m_wdgLayerBox->doubleOpacity,
                                   i18nc("{n} is the number value, % is the percent sign", "{n}%"));
 

@@ -18,6 +18,7 @@
 #include <QTimer>
 #include <QSizeGrip>
 #include <QApplication>
+#include <QClipboard>
 
 #include <klocalizedstring.h>
 #include <KoCanvasBase.h>
@@ -74,7 +75,9 @@ public:
         m_btnLoadImage = new QPushButton(i18n("Open..."), m_topBar);
         m_btnLoadImage->setVisible(false);
 
-        QPushButton *btnClose = new QPushButton(QStringLiteral("X"), m_topBar);
+        QPushButton *btnClose = new QPushButton(m_topBar);
+        btnClose->setIcon(KisIconUtils::loadIcon(QStringLiteral("window-close")));
+        btnClose->setIconSize(QSize(14, 14));
         btnClose->setFixedSize(26, 26);
 
         topLayout->addWidget(m_btnCanvas);
@@ -90,6 +93,30 @@ public:
         m_viewport->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         m_viewport->setMouseTracking(true);
         m_viewport->installEventFilter(this);
+
+        // Empty Image-mode overlay buttons ("Dosya seç" & "Panodan yapıştır")
+        m_imageEmptyOverlay = new QWidget(m_viewport);
+        QVBoxLayout *ovLayout = new QVBoxLayout(m_imageEmptyOverlay);
+        ovLayout->setAlignment(Qt::AlignCenter);
+        ovLayout->setSpacing(8);
+        QPushButton *btnChooseFile = new QPushButton(KisIconUtils::loadIcon(QStringLiteral("document-open")), i18n("Dosya seç"), m_imageEmptyOverlay);
+        QPushButton *btnPasteClip = new QPushButton(KisIconUtils::loadIcon(QStringLiteral("edit-paste")), i18n("Panodan yapıştır"), m_imageEmptyOverlay);
+        ovLayout->addWidget(btnChooseFile);
+        ovLayout->addWidget(btnPasteClip);
+        QVBoxLayout *vpLayout = new QVBoxLayout(m_viewport);
+        vpLayout->addWidget(m_imageEmptyOverlay, 1, Qt::AlignCenter);
+        m_imageEmptyOverlay->setVisible(false);
+
+        connect(btnChooseFile, &QPushButton::clicked, this, &KisFloatingReferenceWindow::loadReferenceImage);
+        connect(btnPasteClip, &QPushButton::clicked, this, [this]() {
+            const QImage clipImg = QApplication::clipboard()->image();
+            if (!clipImg.isNull()) {
+                m_loadedImage = clipImg.convertToFormat(QImage::Format_ARGB32);
+                updateEmptyOverlay();
+                m_viewport->update();
+            }
+        });
+
         rootLayout->addWidget(m_viewport, 1);
 
         // Bottom resize grip
@@ -131,13 +158,22 @@ public Q_SLOTS:
     void setMode(int mode)
     {
         m_mode = static_cast<Mode>(mode);
-        m_btnLoadImage->setVisible(m_mode == ImageMode);
+        m_btnLoadImage->setVisible(m_mode == ImageMode && !m_loadedImage.isNull());
         if (m_mode == CanvasMode) {
             refreshCanvasSnapshot();
-        } else if (m_loadedImage.isNull()) {
-            loadReferenceImage();
         }
+        updateEmptyOverlay();
         m_viewport->update();
+    }
+
+    void updateEmptyOverlay()
+    {
+        if (m_imageEmptyOverlay) {
+            m_imageEmptyOverlay->setVisible(m_mode == ImageMode && m_loadedImage.isNull());
+        }
+        if (m_btnLoadImage) {
+            m_btnLoadImage->setVisible(m_mode == ImageMode && !m_loadedImage.isNull());
+        }
     }
 
     void loadReferenceImage()
@@ -151,6 +187,7 @@ public Q_SLOTS:
             QImage img(fileName);
             if (!img.isNull()) {
                 m_loadedImage = img.convertToFormat(QImage::Format_ARGB32);
+                updateEmptyOverlay();
                 m_viewport->update();
             }
         }
@@ -317,6 +354,7 @@ private:
     Mode m_mode {CanvasMode};
     QWidget *m_topBar {nullptr};
     QWidget *m_viewport {nullptr};
+    QWidget *m_imageEmptyOverlay {nullptr};
     QButtonGroup *m_modeGroup {nullptr};
     QPushButton *m_btnCanvas {nullptr};
     QPushButton *m_btnImage {nullptr};

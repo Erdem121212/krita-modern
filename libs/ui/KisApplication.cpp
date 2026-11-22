@@ -553,6 +553,37 @@ bool KisApplication::start(const KisApplicationArguments &args)
     themeManager.setCurrentTheme(group.readEntry("Theme", "Krita darker"));
 #endif
 
+    // Apply deep dark OLED-style palette with crisp white text and blue accent
+    {
+        QPalette darkPal = qApp->palette();
+        const QColor bgWindow(0x0d, 0x0e, 0x12);
+        const QColor bgBase(0x12, 0x13, 0x19);
+        const QColor bgAlt(0x16, 0x18, 0x21);
+        const QColor bgBtn(0x1b, 0x1d, 0x25);
+        const QColor bgMid(0x2a, 0x2d, 0x3a);
+        const QColor bgMidLight(0x24, 0x27, 0x33);
+        const QColor accent(0x3b, 0x82, 0xf6);
+        const QColor textBright(0xf5, 0xf7, 0xfa);
+        const QColor textDim(0x9a, 0xa0, 0xb2);
+
+        for (QPalette::ColorGroup cg : { QPalette::Active, QPalette::Inactive }) {
+            darkPal.setColor(cg, QPalette::Window, bgWindow);
+            darkPal.setColor(cg, QPalette::Base, bgBase);
+            darkPal.setColor(cg, QPalette::AlternateBase, bgAlt);
+            darkPal.setColor(cg, QPalette::Button, bgBtn);
+            darkPal.setColor(cg, QPalette::Mid, bgMid);
+            darkPal.setColor(cg, QPalette::Midlight, bgMidLight);
+            darkPal.setColor(cg, QPalette::Dark, QColor(0x09, 0x0a, 0x0d));
+            darkPal.setColor(cg, QPalette::Highlight, accent);
+            darkPal.setColor(cg, QPalette::WindowText, textBright);
+            darkPal.setColor(cg, QPalette::Text, textBright);
+            darkPal.setColor(cg, QPalette::ButtonText, textBright);
+            darkPal.setColor(cg, QPalette::HighlightedText, QColor(0xff, 0xff, 0xff));
+            darkPal.setColor(cg, QPalette::PlaceholderText, textDim);
+        }
+        qApp->setPalette(darkPal);
+    }
+
     // Apply subtle modern rounded styling that adapts to the active Krita palette
     qApp->setStyleSheet(QStringLiteral(
         "QPushButton, QToolButton {"
@@ -707,11 +738,55 @@ bool KisApplication::start(const KisApplicationArguments &args)
         "    background-color: palette(highlight);"
         "    color: palette(highlighted-text);"
         "}"
+        "QTabBar {"
+        "    background-color: #161821;"
+        "    border-radius: 8px;"
+        "    padding: 2px;"
+        "}"
         "QTabBar::tab {"
-        "    border-top-left-radius: 6px;"
-        "    border-top-right-radius: 6px;"
-        "    padding: 5px 10px;"
-        "    margin-right: 2px;"
+        "    border-radius: 8px;"
+        "    padding: 5px 12px;"
+        "    margin: 3px 4px;"
+        "    background-color: transparent;"
+        "    color: #f5f7fa;"
+        "}"
+        "QTabBar::tab:selected {"
+        "    background-color: #242733;"
+        "    border: 1px solid #3b82f6;"
+        "}"
+        "QTabBar::tab:hover:!selected {"
+        "    background-color: #1e202a;"
+        "}"
+        "KoToolBox QToolButton {"
+        "    background-color: #1b1d25;"
+        "    border: 1px solid #282b38;"
+        "    border-radius: 7px;"
+        "    padding: 4px;"
+        "    margin: 2px;"
+        "}"
+        "KoToolBox QToolButton:hover {"
+        "    background-color: #242733;"
+        "    border-color: #3a3f52;"
+        "}"
+        "KoToolBox QToolButton:checked {"
+        "    background-color: #3b82f6;"
+        "    border-color: #3b82f6;"
+        "}"
+        "QToolBar {"
+        "    background-color: #14151b;"
+        "    border: none;"
+        "    border-bottom: 1px solid #232530;"
+        "    spacing: 4px;"
+        "    padding: 3px 6px;"
+        "}"
+        "QToolBar QToolButton {"
+        "    border-radius: 7px;"
+        "    padding: 3px;"
+        "}"
+        "QDockWidget::title {"
+        "    background-color: #161821;"
+        "    border-radius: 6px;"
+        "    padding: 4px 8px;"
         "}"
         "QScrollBar:vertical {"
         "    border: none;"

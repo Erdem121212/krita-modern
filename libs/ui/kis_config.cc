@@ -2015,7 +2015,7 @@ void KisConfig::setFavoritePresets(const int value)
 
 bool KisConfig::levelOfDetailEnabled(bool defaultValue) const
 {
-    return (defaultValue ? false : m_cfg.readEntry("levelOfDetailEnabled", false));
+    return (defaultValue ? true : m_cfg.readEntry("levelOfDetailEnabled", true));
 }
 
 void KisConfig::setLevelOfDetailEnabled(bool value)

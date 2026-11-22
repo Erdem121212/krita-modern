@@ -720,7 +720,7 @@ if (!qEnvironmentVariableIsEmpty("KRITA_OPENGL_DEBUG")) {
 
     /// Initialize application info, it will be used by both, Qt and
     /// DrKonqi of the host system
-    KAboutData aboutData("krita",
+    KAboutData aboutData("draworever",
                             i18n("Draworever"),
                             KritaVersionWrapper::versionString(true),
                             i18n("Draworever — modern digital art studio"),

@@ -13,6 +13,7 @@
 #include <QEvent>
 #include <QVBoxLayout>
 #include <QPainter>
+#include <QPainterPath>
 #include <QAbstractItemDelegate>
 #include <QAbstractItemView>
 #include <QStyleOptionViewItem>
@@ -141,7 +142,7 @@ void KisPresetDelegate::paintThumbnail(QPainter *painter, const QStyleOptionView
 
     qreal devicePixelRatioF = painter->device()->devicePixelRatioF();
 
-    QRect paintRect = option.rect.adjusted(1, 1, -1, -1);
+    QRect paintRect = option.rect.adjusted(3, 3, -3, -3);
 
     QImage previewHighDpi =
         KisResourceThumbnailCache::instance()->getImage(index,
@@ -149,7 +150,14 @@ void KisPresetDelegate::paintThumbnail(QPainter *painter, const QStyleOptionView
                                                          Qt::IgnoreAspectRatio,
                                                          Qt::SmoothTransformation);
     previewHighDpi.setDevicePixelRatio(devicePixelRatioF);
+
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
+    QPainterPath cardClip;
+    cardClip.addRoundedRect(QRectF(paintRect), 8.0, 8.0);
+    painter->setClipPath(cardClip);
     painter->drawImage(paintRect.x(), paintRect.y(), previewHighDpi);
+    painter->restore();
 
     if (m_useDirtyPresets && dirty) {
         const QIcon icon = KisIconUtils::loadIcon("dirty-preset");
@@ -162,17 +170,22 @@ void KisPresetDelegate::paintThumbnail(QPainter *painter, const QStyleOptionView
         icon.paint(painter, QRect(paintRect.x() + paintRect.height() - 25, paintRect.y() + paintRect.height() - 25, 25, 25));
     }
 
+    painter->save();
+    painter->setRenderHint(QPainter::Antialiasing, true);
     if (option.state & QStyle::State_Selected) {
-        painter->setCompositionMode(QPainter::CompositionMode_HardLight);
-        painter->setOpacity(1.0);
-        painter->fillRect(option.rect, option.palette.highlight());
-
-        // highlight is not strong enough to pick out preset. draw border around it.
-        painter->setCompositionMode(QPainter::CompositionMode_SourceOver);
-        painter->setPen(QPen(option.palette.highlight(), 4, Qt::SolidLine, Qt::FlatCap, Qt::MiterJoin));
-        QRect selectedBorder = option.rect.adjusted(2 , 2, -2, -2); // constrict the rectangle so it doesn't bleed into other presets
-        painter->drawRect(selectedBorder);
+        painter->setPen(QPen(QColor(0x3b, 0x82, 0xf6), 2.5));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(QRectF(paintRect), 8.0, 8.0);
+    } else if (option.state & QStyle::State_MouseOver) {
+        painter->setPen(QPen(QColor(0x52, 0x58, 0x70), 1.5));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(QRectF(paintRect), 8.0, 8.0);
+    } else {
+        painter->setPen(QPen(QColor(0x28, 0x2b, 0x38), 1.0));
+        painter->setBrush(Qt::NoBrush);
+        painter->drawRoundedRect(QRectF(paintRect), 8.0, 8.0);
     }
+    painter->restore();
 }
 
 void KisPresetDelegate::paintStrokePreview(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index, bool paintThumbnail) const

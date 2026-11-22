@@ -148,10 +148,11 @@
 #include <KisUndoActionsUpdateManager.h>
 #include "KisWelcomePageWidget.h"
 #include "KisBrushShopDialog.h"
-#include "KisEffectsMenuDialog.h"
 #include <QKeySequence>
 #include <QTimer>
 #include <QToolBar>
+#include <QPushButton>
+#include <QStatusBar>
 #include "KisRecentDocumentsModelWrapper.h"
 #include <KritaVersionWrapper.h>
 #include "KisCanvasWindow.h"
@@ -706,11 +707,21 @@ KisMainWindow::KisMainWindow(QUuid uuid)
         dlg.exec();
     });
 
-    QAction *effectsAction = menuBar()->addAction(i18n("Effects"));
-    effectsAction->setIcon(KisIconUtils::loadIcon(QStringLiteral("view-filter")));
-    connect(effectsAction, &QAction::triggered, this, [this]() {
-        KisEffectsMenuDialog dlg(this, this);
-        dlg.exec();
+    // Far-right Export button on MenuBar (visible when a canvas is active)
+    QPushButton *exportBtn = new QPushButton(KisIconUtils::loadIcon(QStringLiteral("document-export")), i18n("Export"), menuBar());
+    exportBtn->setStyleSheet(QStringLiteral(
+        "QPushButton { background-color: #3b82f6; color: #ffffff; border: none; border-radius: 6px; padding: 3px 12px; margin: 2px 6px; font-weight: bold; }"
+        "QPushButton:hover { background-color: #2563eb; }"
+    ));
+    exportBtn->setVisible(false);
+    connect(exportBtn, &QPushButton::clicked, this, [this]() {
+        if (QAction *act = actionCollection()->action(QStringLiteral("file_export_file"))) {
+            act->trigger();
+        }
+    });
+    menuBar()->setCornerWidget(exportBtn, Qt::TopRightCorner);
+    connect(this, &KisMainWindow::activeViewChanged, exportBtn, [this, exportBtn]() {
+        exportBtn->setVisible(activeView() != nullptr);
     });
 
     // Assign icons to top-level menu bar items
@@ -782,11 +793,15 @@ KisMainWindow::KisMainWindow(QUuid uuid)
                     }
                 }
             }
+            target->setTitleBarWidget(new QWidget(target));
             target->setFloating(true);
+            target->setWindowFlags(Qt::Tool | Qt::FramelessWindowHint);
             const QPoint sbPos = quickSidebar->mapToGlobal(QPoint(0, 40));
             target->move(sbPos.x() - target->width() - 8, sbPos.y());
         } else if (willShow && forceFloat && !target->isFloating()) {
+            target->setTitleBarWidget(new QWidget(target));
             target->setFloating(true);
+            target->setWindowFlags(Qt::Tool | Qt::FramelessWindowHint);
         }
         target->setVisible(willShow);
         if (willShow) {
@@ -867,69 +882,28 @@ KisMainWindow::KisMainWindow(QUuid uuid)
         }
     });
 
-    // Respect Editable vs Fixed top toolbar setting from setup
+    // Respect Editable vs Fixed top toolbar setting, shrink icons, add Zoom/Rotate to top bar, and hide bottom status bar
     {
         KConfigGroup drawGrp(KSharedConfig::openConfig(), "Draworever");
         const bool editableTopBar = drawGrp.readEntry("EditableTopBar", false);
+        bool addedZoomToTop = false;
         for (QToolBar *tb : findChildren<QToolBar*>()) {
             if (tb == quickSidebar) continue;
             tb->setMovable(editableTopBar);
+            tb->setIconSize(QSize(16, 16));
+            if (!addedZoomToTop && tb->objectName() == QLatin1String("mainToolBar")) {
+                addedZoomToTop = true;
+                if (QAction *zIn = actionCollection()->action(QStringLiteral("view_zoom_in"))) tb->addAction(zIn);
+                if (QAction *zOut = actionCollection()->action(QStringLiteral("view_zoom_out"))) tb->addAction(zOut);
+                if (QAction *zReset = actionCollection()->action(QStringLiteral("zoom_to_100pct"))) tb->addAction(zReset);
+                if (QAction *rotL = actionCollection()->action(QStringLiteral("rotate_canvas_left"))) tb->addAction(rotL);
+                if (QAction *rotR = actionCollection()->action(QStringLiteral("rotate_canvas_right"))) tb->addAction(rotR);
+            }
+        }
+        if (statusBar()) {
+            statusBar()->hide();
         }
     }
-
-    // On-Screen Shortcut HUD (OSD) when pressing shortcuts like Ctrl+Z, B, E, etc.
-    QLabel *shortcutHud = new QLabel(this);
-    shortcutHud->setObjectName(QStringLiteral("draworeverShortcutHud"));
-    shortcutHud->setAttribute(Qt::WA_TransparentForMouseEvents);
-    shortcutHud->setAlignment(Qt::AlignCenter);
-    shortcutHud->setStyleSheet(QStringLiteral(
-        "QLabel#draworeverShortcutHud {"
-        "  background-color: rgba(20, 20, 24, 215);"
-        "  color: #ffffff;"
-        "  border: 1px solid rgba(255, 255, 255, 50);"
-        "  border-radius: 10px;"
-        "  padding: 6px 14px;"
-        "  font-size: 11pt;"
-        "  font-weight: bold;"
-        "}"
-    ));
-    shortcutHud->hide();
-    QTimer *hudTimer = new QTimer(this);
-    hudTimer->setSingleShot(true);
-    hudTimer->setInterval(900);
-    connect(hudTimer, &QTimer::timeout, shortcutHud, &QLabel::hide);
-
-    class ShortcutHudFilter : public QObject {
-    public:
-        ShortcutHudFilter(QMainWindow *win, QLabel *hud, QTimer *timer)
-            : QObject(win), m_win(win), m_hud(hud), m_timer(timer) {}
-        bool eventFilter(QObject *obj, QEvent *ev) override {
-            if (ev->type() == QEvent::KeyPress && m_win->isActiveWindow()) {
-                QKeyEvent *ke = static_cast<QKeyEvent*>(ev);
-                if (ke->key() >= Qt::Key_Shift && ke->key() <= Qt::Key_Alt) {
-                    return false;
-                }
-                const Qt::KeyboardModifiers mods = ke->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier);
-                if (mods & Qt::ControlModifier) {
-                    const QString seq = QKeySequence(int(mods) | ke->key()).toString(QKeySequence::NativeText);
-                    if (!seq.isEmpty()) {
-                        m_hud->setText(seq);
-                        m_hud->adjustSize();
-                        m_hud->move((m_win->width() - m_hud->width()) / 2, m_win->height() - m_hud->height() - 48);
-                        m_hud->show();
-                        m_hud->raise();
-                        m_timer->start();
-                    }
-                }
-            }
-            Q_UNUSED(obj);
-            return false;
-        }
-        QMainWindow *m_win;
-        QLabel *m_hud;
-        QTimer *m_timer;
-    };
-    qApp->installEventFilter(new ShortcutHudFilter(this, shortcutHud, hudTimer));
 
 #ifdef Q_OS_ANDROID
     // HACK: This prevents the mainWindow from going beyond the screen with no
