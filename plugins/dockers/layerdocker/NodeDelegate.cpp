@@ -105,10 +105,11 @@ NodeDelegate::~NodeDelegate()
 QSize NodeDelegate::sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     KisNodeViewColorScheme scm;
+    constexpr int verticalGap = 4; // 2px top + 2px bottom padding between layer cards
     if (index.column() == NodeView::VISIBILITY_COL) {
-        return QSize(scm.visibilityColumnWidth(), d->rowHeight);
+        return QSize(scm.visibilityColumnWidth(), d->rowHeight + verticalGap);
     }
-    return QSize(option.rect.width(), d->rowHeight);
+    return QSize(option.rect.width(), d->rowHeight + verticalGap);
 }
 
 void NodeDelegate::paint(QPainter *p, const QStyleOptionViewItem &o, const QModelIndex &index) const
@@ -118,7 +119,42 @@ void NodeDelegate::paint(QPainter *p, const QStyleOptionViewItem &o, const QMode
     {
         QStyleOptionViewItem option = getOptions(o, index);
         QStyle *style = option.widget ? option.widget->style() : QApplication::style();
-        style->drawPrimitive(QStyle::PE_PanelItemViewItem, &option, p, option.widget);
+
+        // Build unified rounded card rect spanning all visible columns of this layer row
+        QRect rowRect = option.rect;
+        for (int c = 0; c <= NodeView::SELECTED_COL; ++c) {
+            if (!d->view->isColumnHidden(c)) {
+                const QRect cr = d->view->visualRect(index.sibling(index.row(), c));
+                if (cr.isValid()) {
+                    rowRect = rowRect.united(cr);
+                }
+            }
+        }
+        rowRect.adjust(4, 2, -4, -2);
+
+        const bool isSelected = (option.state & QStyle::State_Selected);
+        const bool isHovered = (option.state & QStyle::State_MouseOver);
+
+        QPainterPath cardPath;
+        cardPath.addRoundedRect(QRectF(rowRect).adjusted(0.5, 0.5, -0.5, -0.5), 7.0, 7.0);
+
+        p->setRenderHint(QPainter::Antialiasing, true);
+        p->setClipRect(o.rect, Qt::IntersectClip);
+        if (isSelected) {
+            p->fillPath(cardPath, QColor(0x23, 0x29, 0x3b));
+            p->setPen(QPen(QColor(0x4c, 0x6e, 0xf5, 190), 1.0));
+        } else if (isHovered) {
+            p->fillPath(cardPath, QColor(0x1c, 0x1f, 0x2b));
+            p->setPen(QPen(QColor(0x2d, 0x32, 0x45), 1.0));
+        } else {
+            p->fillPath(cardPath, QColor(0x16, 0x18, 0x22));
+            p->setPen(QPen(QColor(0x22, 0x25, 0x34), 1.0));
+        }
+        p->drawPath(cardPath);
+
+        // Clip inner drawing to the rounded card and keep content vertically centered
+        p->setClipPath(cardPath, Qt::IntersectClip);
+        option.rect.adjust(0, 2, 0, -2);
 
         bool shouldGrayOut = index.data(KisNodeModel::ShouldGrayOutRole).toBool();
         if (shouldGrayOut) {
@@ -224,40 +260,9 @@ void NodeDelegate::drawColorLabel(QPainter *p, const QStyleOptionViewItem &optio
 
 void NodeDelegate::drawFrame(QPainter *p, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
-    KisNodeViewColorScheme scm;
-
-    QPen oldPen = p->pen();
-    p->setPen(scm.gridColor(option, d->view));
-
-    const QRect visibilityRect = visibilityClickRect(option, index);
-    const QRect thumbnailRect  = thumbnailClickRect(option, index);
-    const QRect iconsRectR     = iconsRect(option, index);
-
-    const float bottomY = thumbnailRect.bottomLeft().y();
-
-    QPoint bottomLeftPoint;
-    QPoint bottomRightPoint;
-    if (option.direction == Qt::RightToLeft) {
-        bottomLeftPoint = iconsRectR.bottomLeft();
-        bottomRightPoint = visibilityRect.bottomRight();
-    } else {
-        bottomLeftPoint = visibilityRect.bottomLeft();
-        bottomRightPoint = iconsRectR.bottomRight();
-    }
-
-    // bottom running horizontal line
-    p->drawLine(bottomLeftPoint.x(), bottomY,
-                bottomRightPoint.x(), bottomY);
-
-    // icons' lines are drawn by drawIcons
-
-    //// For debugging purposes only
-    p->setPen(Qt::blue);
-    //KritaUtils::renderExactRect(p, iconsRectR);
-    //KritaUtils::renderExactRect(p, textRect(option, index));
-    //KritaUtils::renderExactRect(p, visibilityRect);
-
-    p->setPen(oldPen);
+    Q_UNUSED(p);
+    Q_UNUSED(option);
+    Q_UNUSED(index);
 }
 
 QRect NodeDelegate::thumbnailClickRect(const QStyleOptionViewItem &option, const QModelIndex &index) const

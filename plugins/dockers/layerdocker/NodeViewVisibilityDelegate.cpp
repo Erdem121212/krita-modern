@@ -30,5 +30,5 @@ QSize NodeViewVisibilityDelegate::sizeHint(const QStyleOptionViewItem &option, c
     Q_UNUSED(index);
 
     KisNodeViewColorScheme scm;
-    return QSize(option.rect.width(), scm.rowHeight());
+    return QSize(option.rect.width(), scm.rowHeight() + 4);
 }
