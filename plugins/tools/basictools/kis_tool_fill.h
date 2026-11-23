@@ -116,7 +116,7 @@ private:
     KoColor m_contiguousFillBoundaryColor;
     int m_threshold {8};
     int m_opacitySpread {100};
-    int m_closeGap {0};
+    int m_closeGap {4};
     bool m_useSelectionAsBoundary {true};
 
     bool m_antiAlias {true};

@@ -577,7 +577,7 @@ QWidget* KisToolFill::createOptionWidget()
               "Spread: {n}%"));
 
     m_sliderCloseGap = new KisSliderSpinBox;
-    m_sliderCloseGap->setPrefix(i18nc("The 'close gap' spinbox prefix in fill tool options", "Close Gap: "));
+    m_sliderCloseGap->setPrefix(i18nc("The 'close gap' spinbox prefix in fill tool options", "Gap Recognition: "));
     m_sliderCloseGap->setRange(0, 32);
     m_sliderCloseGap->setSuffix(i18n(" px"));
 
@@ -911,7 +911,7 @@ void KisToolFill::loadConfiguration()
     m_contiguousFillBoundaryColor = loadContiguousFillBoundaryColorFromConfig();
     m_threshold = m_configGroup.readEntry<int>("thresholdAmount", 8);
     m_opacitySpread = m_configGroup.readEntry<int>("opacitySpread", 100);
-    m_closeGap = m_configGroup.readEntry<int>("closeGapAmount", 0);
+    m_closeGap = m_configGroup.readEntry<int>("closeGapAmount", 4);
     m_useSelectionAsBoundary = m_configGroup.readEntry<bool>("useSelectionAsBoundary", true);
     m_antiAlias = m_configGroup.readEntry<bool>("antiAlias", false);
     m_sizemod = m_configGroup.readEntry<int>("growSelection", 0);
@@ -1276,7 +1276,7 @@ void KisToolFill::slot_buttonReset_clicked()
     m_comboBoxCustomCompositeOp->selectCompositeOp(KoID(COMPOSITE_OVER));
     m_sliderThreshold->setValue(8);
     m_sliderSpread->setValue(100);
-    m_sliderCloseGap->setValue(0);
+    m_sliderCloseGap->setValue(4);
     m_checkBoxSelectionAsBoundary->setChecked(true);
     m_checkBoxAntiAlias->setChecked(false);
     m_sliderGrow->setValue(0);
