@@ -362,13 +362,17 @@ void KisToolFill::addFillingOperation(const QVector<QPoint> &seedPoints)
                                             : (qFuzzyCompare(m_resourcesSnapshot->opacity(), OPACITY_OPAQUE_F) &&
                                                m_resourcesSnapshot->compositeOpId() == COMPOSITE_OVER);
 
+        // Automatic resolution-aware Gap Recognition (3px..10px) with no manual slider needed
+        const int maxDim = qMax(image()->width(), image()->height());
+        const int autoCloseGap = qBound(3, maxDim / 450, 10);
+
         const bool useFastMode = !m_resourcesSnapshot->activeSelection() &&
                                  blendingOptionsAreNoOp &&
                                  m_fillType != FillType_FillWithPattern &&
                                  m_opacitySpread == 100 &&
                                  m_useSelectionAsBoundary == false &&
                                  !m_antiAlias && m_sizemod == 0 && m_feather == 0 &&
-                                 m_closeGap == 0 &&
+                                 autoCloseGap == 0 &&
                                  m_reference == Reference_CurrentLayer;
 
         visitor->setSeedPoints(seedPoints);
@@ -391,7 +395,7 @@ void KisToolFill::addFillingOperation(const QVector<QPoint> &seedPoints)
         }
         visitor->setFillThreshold(m_threshold);
         visitor->setOpacitySpread(m_opacitySpread);
-        visitor->setCloseGap(m_closeGap);
+        visitor->setCloseGap(autoCloseGap);
         visitor->setUseSelectionAsBoundary(m_useSelectionAsBoundary);
         visitor->setAntiAlias(m_antiAlias);
         visitor->setSizeMod(m_sizemod);
@@ -724,6 +728,7 @@ QWidget* KisToolFill::createOptionWidget()
     sectionRegionExtent->appendWidget("sliderThreshold", m_sliderThreshold);
     sectionRegionExtent->appendWidget("sliderSpread", m_sliderSpread);
     sectionRegionExtent->appendWidget("sliderCloseGap", m_sliderCloseGap);
+    sectionRegionExtent->setWidgetVisible("sliderCloseGap", false);
     sectionRegionExtent->appendWidget("checkBoxSelectionAsBoundary", m_checkBoxSelectionAsBoundary);
     m_optionWidget->appendWidget("sectionRegionExtent", sectionRegionExtent);
 
@@ -999,7 +1004,7 @@ void KisToolFill::slot_optionButtonStripWhatToFill_buttonToggled(
         m_optionWidget->widgetAs<KisOptionCollectionWidgetWithHeader*>("sectionRegionExtent")
             ->setWidgetVisible("buttonContiguousFillBoundaryColor", m_contiguousFillMode == ContiguousFillMode_BoundaryFill);
         m_optionWidget->widgetAs<KisOptionCollectionWidgetWithHeader*>("sectionRegionExtent")
-            ->setWidgetVisible("sliderCloseGap", true);
+            ->setWidgetVisible("sliderCloseGap", false);
         m_optionWidget->widgetAs<KisOptionCollectionWidgetWithHeader*>("sectionRegionExtent")
             ->setWidgetVisible("checkBoxSelectionAsBoundary", true);
         m_fillMode = FillMode_FillContiguousRegion;
