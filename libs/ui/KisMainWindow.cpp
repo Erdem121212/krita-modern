@@ -898,6 +898,15 @@ KisMainWindow::KisMainWindow(QUuid uuid)
         for (QTabBar *tb : findChildren<QTabBar*>()) {
             tb->setExpanding(false);
         }
+        for (QToolBar *tb : findChildren<QToolBar*>()) {
+            if (tb->objectName() == QLatin1String("draworeverQuickSidebar")) continue;
+            if (KisToolBar *ktb = qobject_cast<KisToolBar*>(tb)) {
+                ktb->setIconDimensions(14);
+            } else {
+                tb->setIconSize(QSize(14, 14));
+            }
+            tb->setMaximumHeight(28);
+        }
     });
 
     // Respect Editable vs Fixed top toolbar setting, shrink icons, add Zoom/Rotate to top bar, and hide bottom status bar
@@ -908,7 +917,11 @@ KisMainWindow::KisMainWindow(QUuid uuid)
         for (QToolBar *tb : findChildren<QToolBar*>()) {
             if (tb == quickSidebar) continue;
             tb->setMovable(editableTopBar);
-            tb->setIconSize(QSize(14, 14));
+            if (KisToolBar *ktb = qobject_cast<KisToolBar*>(tb)) {
+                ktb->setIconDimensions(14);
+            } else {
+                tb->setIconSize(QSize(14, 14));
+            }
             tb->setMaximumHeight(28);
             if (!addedZoomToTop && tb->objectName() == QLatin1String("mainToolBar")) {
                 addedZoomToTop = true;

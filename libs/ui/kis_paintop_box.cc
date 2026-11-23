@@ -103,9 +103,9 @@ KisPaintopBox::KisPaintopBox(KisViewManager *viewManager, QWidget *parent, const
     m_favoriteResourceManager = new KisFavoriteResourceManager(this);
 
     KConfigGroup grp =  KSharedConfig::openConfig()->group("krita").group("Toolbar BrushesAndStuff");
-    int iconsize = grp.readEntry("IconSize", 22);
+    int iconsize = qMin(grp.readEntry("IconSize", 14), 16);
     // NOTE: buttonsize should be the same value as the one used in ktoolbar for all QToolButton
-    int buttonsize = grp.readEntry("ButtonSize", 32);
+    int buttonsize = qMin(grp.readEntry("ButtonSize", 24), 26);
 
     if (!cfg.toolOptionsInDocker()) {
         m_toolOptionsPopupButton = new KisPopupButton(this);

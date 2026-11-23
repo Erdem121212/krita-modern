@@ -1044,7 +1044,7 @@ void KisToolBar::setIconDimensions(int size)
 
 int KisToolBar::iconSizeDefault() const
 {
-    return 22;
+    return 14;
 }
 
 void KisToolBar::slotMovableChanged(bool movable)

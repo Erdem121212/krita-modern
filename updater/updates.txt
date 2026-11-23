@@ -1,0 +1,26 @@
+;aiu;
+
+; Advanced Installer Auto Updater Configuration Template for Draworever
+; Host this file at:
+;   https://raw.githubusercontent.com/Erdem121212/krita-modern/modern-ui/updater/updates.txt
+; or upload it as an asset to your "latest" GitHub Release:
+;   https://github.com/Erdem121212/krita-modern/releases/latest/download/updates.txt
+;
+; Whenever you publish a new version:
+;   1. Upload the new installer (.exe / .msi) to a GitHub Release (e.g. tag v1.0.1).
+;   2. Update Version, URL, Size (exact bytes), SHA256, and FilePath/RegistryKey below.
+;   3. Commit & push this file (or upload it to the release).
+
+[Draworever-1.0.1]
+Name = Draworever 1.0.1
+ProductVersion = 1.0.1.0
+URL = https://github.com/Erdem121212/krita-modern/releases/download/v1.0.1/Draworever-Setup-1.0.1.exe
+Size = 0
+SHA256 = REPLACE_WITH_EXACT_SHA256_HASH_OF_INSTALLER
+ServerFileName = Draworever-Setup-1.0.1.exe
+Flags = Critical
+RegistryKey = HKLM\Software\Draworever\Version
+Version = 1.0.1.0
+Description = Draworever guncellemesi: hata duzeltmeleri ve arayuz iyilestirmeleri.
+Feature = Yeni firca paketleri ve kompakt ust toolbar
+BugFix = Ust bar ikon boyutu ve karanlik tema iyilestirmeleri
