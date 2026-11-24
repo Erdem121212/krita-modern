@@ -11,16 +11,16 @@
 ;   2. Update Version, URL, Size (exact bytes), SHA256, and FilePath/RegistryKey below.
 ;   3. Commit & push this file (or upload it to the release).
 
-[Draworever-1.0.1]
+[Draworever-1.0.2]
 Name = Draworever 1.0.2
 ProductVersion = 1.0.2.0
-URL = https://github.com/Erdem121212/krita-modern/releases/download/v1.0.2/Draworever-Setup-1.0.2.exe
-Size = 0
-SHA256 = 324f9a397761d45560e8c641c165fb317529fa77a5134c407153588b2de185b0
-ServerFileName = Draworever-Setup-1.0.2.exe
+URL = https://github.com/Erdem121212/krita-modern/releases/download/v.1.0.2/Draworever-1.0.2-Setup.exe
+Size = 385035096
+SHA256 = 324F9A397761D45560E8C641C165FB317529FA77A5134C407153588B2DE185B0
+ServerFileName = Draworever-1.0.2-Setup.exe
 Flags = Critical
 RegistryKey = HKLM\Software\Draworever\Version
-Version = 1.0.1.0
+Version = 1.0.2.0
 Description = The main program
 Feature = New features!! You'll see it..
 BugFix = Gap Recognition better ig
