@@ -61,6 +61,7 @@
 #include <kis_icon.h>
 #include "kis_splash_screen.h"
 #include "KisFirstRunWizard.h"
+#include <KisStorageModel.h>
 #include "kis_config.h"
 #include "kis_config_notifier.h"
 #include "flake/kis_shape_selection.h"
@@ -911,6 +912,25 @@ bool KisApplication::start(const KisApplicationArguments &args)
     processEvents();
     if (!registerResources()) {
         return false;
+    }
+
+    // Ensure all installed brush bundles are enabled by default on first launch of 1.0.3
+    {
+        KConfigGroup drawGrp(KSharedConfig::openConfig(), "Draworever");
+        if (!drawGrp.readEntry("AllBrushesActivated103", false)) {
+            if (KisStorageModel *sm = KisStorageModel::instance()) {
+                for (int i = 0; i < sm->rowCount(); ++i) {
+                    const QModelIndex idx = sm->index(i, 0);
+                    const QString loc = idx.data(Qt::UserRole + KisStorageModel::Location).toString();
+                    if (loc.endsWith(QStringLiteral(".bundle"), Qt::CaseInsensitive) &&
+                        idx.data(Qt::CheckStateRole).toInt() != Qt::Checked) {
+                        sm->setData(idx, Qt::Checked, Qt::CheckStateRole);
+                    }
+                }
+            }
+            drawGrp.writeEntry("AllBrushesActivated103", true);
+            drawGrp.sync();
+        }
     }
 
     KisPart *kisPart = KisPart::instance();

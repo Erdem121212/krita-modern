@@ -87,10 +87,40 @@ void KisBrushShopDialog::refreshBundleList()
             const bool active = idx.data(Qt::CheckStateRole).toInt() == Qt::Checked;
             if (loc.endsWith(QStringLiteral(".bundle"), Qt::CaseInsensitive)) {
                 const QString name = QFileInfo(loc).fileName();
-                QListWidgetItem *item = new QListWidgetItem(
-                    QString("%1  [%2]").arg(name, active ? i18n("Active") : i18n("Disabled")),
-                    m_listWidget);
-                item->setData(Qt::UserRole, i);
+                QListWidgetItem *item = new QListWidgetItem(m_listWidget);
+                item->setSizeHint(QSize(0, 40));
+
+                QWidget *rowWidget = new QWidget(m_listWidget);
+                QHBoxLayout *rowLayout = new QHBoxLayout(rowWidget);
+                rowLayout->setContentsMargins(10, 4, 10, 4);
+                rowLayout->setSpacing(8);
+
+                QLabel *nameLabel = new QLabel(name, rowWidget);
+                nameLabel->setStyleSheet(QStringLiteral("QLabel { color: #f5f7fa; background: transparent; }"));
+                rowLayout->addWidget(nameLabel, 1);
+
+                QPushButton *toggleBtn = new QPushButton(active ? i18n("Active") : i18n("Off"), rowWidget);
+                toggleBtn->setCheckable(true);
+                toggleBtn->setChecked(active);
+                toggleBtn->setFixedSize(64, 24);
+                toggleBtn->setCursor(Qt::PointingHandCursor);
+                toggleBtn->setStyleSheet(QStringLiteral(
+                    "QPushButton { background-color: #252836; color: #9aa0b2; border: 1px solid #32364a; border-radius: 12px; font-size: 11px; font-weight: bold; padding: 0px; }"
+                    "QPushButton:checked { background-color: #3b82f6; color: #ffffff; border: none; }"
+                    "QPushButton:hover { border-color: #4c6ef5; }"
+                ));
+
+                connect(toggleBtn, &QPushButton::toggled, this, [this, toggleBtn, name, i](bool checked) {
+                    if (KisStorageModel *model = KisStorageModel::instance()) {
+                        const QModelIndex storageIdx = model->index(i, 0);
+                        model->setData(storageIdx, checked ? Qt::Checked : Qt::Unchecked, Qt::CheckStateRole);
+                    }
+                    toggleBtn->setText(checked ? i18n("Active") : i18n("Off"));
+                    m_statusLabel->setText(checked ? i18n("Enabled %1", name) : i18n("Disabled %1", name));
+                });
+
+                rowLayout->addWidget(toggleBtn);
+                m_listWidget->setItemWidget(item, rowWidget);
             }
         }
     }

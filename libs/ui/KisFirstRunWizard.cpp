@@ -157,7 +157,7 @@ KisFirstRunWizard::KisFirstRunWizard(QWidget *parent)
     m_chkBuiltinBrushes->setChecked(true);
     m_chkKrita5Brushes->setChecked(true);
     m_chkKrita4Brushes->setChecked(true);
-    m_chkKrita3Brushes->setChecked(false);
+    m_chkKrita3Brushes->setChecked(true);
 
     p2Layout->addWidget(m_chkBuiltinBrushes);
     p2Layout->addWidget(m_chkKrita5Brushes);
